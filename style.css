@@ -1,0 +1,595 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+    touch-action: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+#game-container {
+    position: relative;
+    width: 100%;
+    max-width: 960px;
+    aspect-ratio: 16/9;
+    max-height: 100vh;
+}
+
+#gameCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    border-radius: 12px;
+    box-shadow: 0 0 40px rgba(0, 200, 255, 0.3);
+}
+
+#ui-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+#score-display {
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 48px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+#score-display.visible {
+    opacity: 1;
+}
+
+/* 토큰 표시 (게임 중) */
+#token-display {
+    position: absolute;
+    top: 30px;
+    right: 20px;
+    font-size: 20px;
+    font-weight: bold;
+    color: #FFD700;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+#token-display::before {
+    content: '🪙 ';
+}
+
+#token-display.visible {
+    opacity: 1;
+}
+
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    text-align: center;
+    padding: 20px;
+    pointer-events: auto;
+}
+
+.screen.hidden {
+    display: none;
+}
+
+#start-screen h1 {
+    font-size: 56px;
+    margin-bottom: 0;
+    background: linear-gradient(45deg, #FFD700, #FFA500);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+#start-screen .subtitle {
+    font-size: 20px;
+    color: #FFD700;
+    margin-bottom: 15px;
+}
+
+/* 토큰 정보 (시작 화면) */
+.token-info {
+    background: rgba(255, 215, 0, 0.2);
+    padding: 8px 20px;
+    border-radius: 20px;
+    margin-bottom: 15px;
+    border: 1px solid #FFD700;
+}
+
+.token-info::before {
+    content: '🪙 보유 토큰: ';
+    color: #FFD700;
+}
+
+#start-tokens {
+    color: #fff;
+    font-weight: bold;
+}
+
+.how-to-play {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 10px 25px;
+    border-radius: 15px;
+    margin-bottom: 15px;
+}
+
+.how-to-play > p:first-child {
+    font-size: 16px;
+    font-weight: bold;
+    color: #FFD700;
+    margin-bottom: 5px;
+}
+
+#start-screen .instruction {
+    font-size: 14px;
+    color: #ddd;
+    margin: 3px 0;
+}
+
+.select-difficulty {
+    font-size: 18px;
+    color: #aaa;
+    margin-bottom: 15px;
+}
+
+/* 난이도 버튼 */
+.difficulty-buttons {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.diff-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 15px 25px;
+    border: none;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    min-width: 100px;
+}
+
+.diff-btn.easy {
+    background: linear-gradient(135deg, #4CAF50, #8BC34A);
+    color: white;
+}
+
+.diff-btn.middle {
+    background: linear-gradient(135deg, #FF9800, #FFC107);
+    color: white;
+}
+
+.diff-btn.hard {
+    background: linear-gradient(135deg, #f44336, #E91E63);
+    color: white;
+}
+
+.diff-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+}
+
+.diff-btn:active {
+    transform: scale(0.95);
+}
+
+.diff-icon {
+    font-size: 28px;
+    margin-bottom: 5px;
+}
+
+.diff-name {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.diff-desc {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+#gameover-screen h2 {
+    font-size: 48px;
+    color: #ff6b6b;
+    margin-bottom: 20px;
+}
+
+.score-box {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 15px 35px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+}
+
+.score-box p {
+    font-size: 22px;
+    margin: 8px 0;
+}
+
+.score-box span {
+    color: #FFD700;
+    font-weight: bold;
+}
+
+/* 되살리기 섹션 */
+.revive-section {
+    margin-bottom: 15px;
+}
+
+.token-count {
+    font-size: 20px;
+    color: #FFD700;
+    margin-bottom: 10px;
+}
+
+.revive-btn {
+    padding: 12px 30px;
+    font-size: 18px;
+    background: linear-gradient(45deg, #9C27B0, #E91E63);
+    border: none;
+    border-radius: 25px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+}
+
+.revive-btn:hover:not(:disabled) {
+    transform: scale(1.05);
+    box-shadow: 0 5px 20px rgba(156, 39, 176, 0.5);
+}
+
+.revive-btn:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+.revive-btn:disabled {
+    background: #555;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+#restart-btn {
+    padding: 12px 35px;
+    font-size: 18px;
+    background: linear-gradient(45deg, #607D8B, #78909C);
+    border: none;
+    border-radius: 25px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    pointer-events: auto;
+}
+
+#restart-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 20px rgba(96, 125, 139, 0.4);
+}
+
+#restart-btn:active {
+    transform: scale(0.95);
+}
+
+#home-btn {
+    padding: 12px 35px;
+    font-size: 18px;
+    background: linear-gradient(45deg, #2196F3, #03A9F4);
+    border: none;
+    border-radius: 25px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    pointer-events: auto;
+    margin-top: 10px;
+}
+
+#home-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 20px rgba(33, 150, 243, 0.4);
+}
+
+#home-btn:active {
+    transform: scale(0.95);
+}
+
+/* 게임 중 일시정지 버튼 */
+#pause-btn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: transform 0.2s, background 0.2s;
+    z-index: 20;
+}
+
+#pause-btn:hover {
+    background: rgba(0, 0, 0, 0.7);
+    transform: scale(1.1);
+}
+
+#pause-btn.hidden {
+    display: none;
+}
+
+/* 일시정지 화면 */
+#pause-screen {
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 100;
+}
+
+#pause-screen h2 {
+    font-size: 48px;
+    color: #fff;
+    margin-bottom: 30px;
+}
+
+.pause-menu-btn {
+    display: block;
+    width: 200px;
+    padding: 15px 30px;
+    margin: 10px auto;
+    font-size: 18px;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    border: none;
+    border-radius: 25px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.pause-menu-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 20px rgba(102, 126, 234, 0.5);
+}
+
+.pause-menu-btn:active {
+    transform: scale(0.95);
+}
+
+/* 화면 회전 메시지 */
+#rotate-message {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+}
+
+.rotate-content {
+    text-align: center;
+    color: white;
+}
+
+.rotate-icon {
+    font-size: 80px;
+    animation: rotate-phone 1.5s ease-in-out infinite;
+}
+
+.rotate-content p {
+    font-size: 24px;
+    margin-top: 20px;
+    color: #FFD700;
+}
+
+@keyframes rotate-phone {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(90deg); }
+}
+
+/* 모바일 세로 모드일 때 회전 메시지 표시 */
+@media (max-width: 768px) and (orientation: portrait) {
+    #rotate-message {
+        display: flex;
+    }
+
+    #game-container {
+        display: none;
+    }
+}
+
+/* 모바일 최적화 - 가로 모드 */
+@media (max-height: 500px) {
+    #game-container {
+        max-width: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+
+    #gameCanvas {
+        border-radius: 0;
+    }
+
+    #start-screen h1 {
+        font-size: 32px;
+    }
+
+    #start-screen .subtitle {
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+
+    .token-info {
+        padding: 5px 15px;
+        margin-bottom: 10px;
+        font-size: 14px;
+    }
+
+    .how-to-play {
+        padding: 8px 20px;
+        margin-bottom: 10px;
+    }
+
+    .how-to-play > p:first-child {
+        font-size: 14px;
+    }
+
+    #start-screen .instruction {
+        font-size: 12px;
+    }
+
+    .select-difficulty {
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+
+    .diff-btn {
+        padding: 10px 18px;
+        min-width: 80px;
+    }
+
+    .diff-icon {
+        font-size: 22px;
+    }
+
+    .diff-name {
+        font-size: 14px;
+    }
+
+    .diff-desc {
+        font-size: 10px;
+    }
+
+    #score-display {
+        font-size: 32px;
+        top: 15px;
+    }
+
+    #token-display {
+        font-size: 16px;
+        top: 15px;
+    }
+
+    #gameover-screen h2 {
+        font-size: 28px;
+        margin-bottom: 10px;
+    }
+
+    .score-box {
+        padding: 10px 25px;
+        margin-bottom: 10px;
+    }
+
+    .score-box p {
+        font-size: 16px;
+    }
+
+    .revive-section {
+        margin-bottom: 10px;
+    }
+
+    .token-count {
+        font-size: 16px;
+    }
+
+    .revive-btn {
+        padding: 8px 20px;
+        font-size: 14px;
+    }
+
+    #restart-btn {
+        padding: 8px 25px;
+        font-size: 14px;
+    }
+
+    #home-btn {
+        padding: 8px 25px;
+        font-size: 14px;
+        margin-top: 8px;
+    }
+
+    #pause-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+        top: 15px;
+        left: 15px;
+    }
+
+    #pause-screen h2 {
+        font-size: 32px;
+        margin-bottom: 20px;
+    }
+
+    .pause-menu-btn {
+        width: 160px;
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 600px) and (orientation: portrait) {
+    #game-container {
+        aspect-ratio: 4/3;
+    }
+
+    .difficulty-buttons {
+        gap: 10px;
+    }
+
+    .diff-btn {
+        padding: 12px 20px;
+        min-width: 90px;
+    }
+}
