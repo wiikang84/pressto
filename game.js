@@ -72,13 +72,59 @@ let tokenDisplay_timer = 0; // 토큰 획득 표시 타이머
 let collectibleTokens = [];
 let lastTokenLevel = 0; // 마지막 토큰 생성 레벨
 
-// 플레이어 이미지 로드
-const playerImage = new Image();
-playerImage.src = 'assets/player.png';
-let playerImageLoaded = false;
-playerImage.onload = () => {
-    playerImageLoaded = true;
+// 플레이어 스프라이트 로드 (애니메이션)
+const birdSprites = [];
+let birdSpritesLoaded = 0;
+const BIRD_FRAME_COUNT = 2;
+
+for (let i = 1; i <= BIRD_FRAME_COUNT; i++) {
+    const img = new Image();
+    img.src = `assets/sprites/transparent PNG/fly/frame-${i}.png`;
+    img.onload = () => {
+        birdSpritesLoaded++;
+    };
+    birdSprites.push(img);
+}
+
+let currentBirdFrame = 0;
+let birdAnimationTimer = 0;
+const BIRD_ANIMATION_SPEED = 8; // 프레임당 틱
+
+// 사운드 시스템
+const sounds = {
+    jump: new Audio('assets/sounds/jump.mp3'),
+    score: new Audio('assets/sounds/score.mp3'),
+    hit: new Audio('assets/sounds/hit.wav'),
+    levelup: new Audio('assets/sounds/levelup.wav'),
+    token: new Audio('assets/sounds/token.wav')
 };
+
+// 사운드 볼륨 설정
+Object.values(sounds).forEach(sound => {
+    sound.volume = 0.3;
+});
+
+function playSound(name) {
+    if (sounds[name]) {
+        sounds[name].currentTime = 0;
+        sounds[name].play().catch(() => {}); // 자동재생 차단 무시
+    }
+}
+
+// 패럴랙스 배경용 구름
+let clouds = [];
+function initClouds() {
+    clouds = [];
+    for (let i = 0; i < 8; i++) {
+        clouds.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height * 0.6,
+            size: 30 + Math.random() * 50,
+            speed: 0.2 + Math.random() * 0.3,
+            opacity: 0.3 + Math.random() * 0.4
+        });
+    }
+}
 
 // Canvas 크기 설정
 function resizeCanvas() {
@@ -224,6 +270,9 @@ function resetGame() {
     lastTokenLevel = 0;
     tokenDisplay_timer = 0;
     reviveInvincibleTime = 0;
+    currentBirdFrame = 0;
+    birdAnimationTimer = 0;
+    initClouds();
     resetPlayer();
     scoreDisplay.textContent = '0';
     updateTokenDisplays();
@@ -319,85 +368,155 @@ function drawBackground() {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // 패럴랙스 구름 업데이트 및 그리기
+    if (gameState === GameState.PLAYING) {
+        updateParallaxClouds();
+    }
+    drawParallaxClouds();
+
     // 레벨별 배경 장식
     const themeIndex = (currentLevel - 1) % LEVELS_PER_CYCLE;
 
     if (themeIndex === 0) {
-        // 맑은 하늘 - 구름
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        drawCloud(canvas.width * 0.1, canvas.height * 0.15, 40);
-        drawCloud(canvas.width * 0.4, canvas.height * 0.3, 55);
-        drawCloud(canvas.width * 0.7, canvas.height * 0.2, 45);
-    } else if (themeIndex === 1) {
-        // 석양 - 구름 + 태양
-        ctx.fillStyle = 'rgba(255, 200, 100, 0.4)';
-        drawCloud(canvas.width * 0.2, canvas.height * 0.2, 50);
-        drawCloud(canvas.width * 0.6, canvas.height * 0.25, 45);
+        // 맑은 하늘 - 추가 장식
         // 태양
-        ctx.fillStyle = 'rgba(255, 150, 50, 0.6)';
+        ctx.fillStyle = 'rgba(255, 255, 200, 0.8)';
         ctx.beginPath();
-        ctx.arc(canvas.width * 0.85, canvas.height * 0.3, 40, 0, Math.PI * 2);
+        ctx.arc(canvas.width * 0.9, canvas.height * 0.15, 35, 0, Math.PI * 2);
+        ctx.fill();
+        // 태양광
+        ctx.strokeStyle = 'rgba(255, 255, 200, 0.3)';
+        ctx.lineWidth = 3;
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2;
+            ctx.beginPath();
+            ctx.moveTo(canvas.width * 0.9 + Math.cos(angle) * 45, canvas.height * 0.15 + Math.sin(angle) * 45);
+            ctx.lineTo(canvas.width * 0.9 + Math.cos(angle) * 60, canvas.height * 0.15 + Math.sin(angle) * 60);
+            ctx.stroke();
+        }
+    } else if (themeIndex === 1) {
+        // 석양 - 태양
+        const sunGradient = ctx.createRadialGradient(
+            canvas.width * 0.85, canvas.height * 0.35, 0,
+            canvas.width * 0.85, canvas.height * 0.35, 50
+        );
+        sunGradient.addColorStop(0, 'rgba(255, 200, 100, 1)');
+        sunGradient.addColorStop(0.5, 'rgba(255, 150, 50, 0.8)');
+        sunGradient.addColorStop(1, 'rgba(255, 100, 50, 0)');
+        ctx.fillStyle = sunGradient;
+        ctx.beginPath();
+        ctx.arc(canvas.width * 0.85, canvas.height * 0.35, 50, 0, Math.PI * 2);
         ctx.fill();
     } else if (themeIndex === 2) {
-        // 밤하늘 - 별
-        ctx.fillStyle = '#fff';
-        for (let i = 0; i < 50; i++) {
-            const x = (i * 137) % canvas.width;
-            const y = (i * 89) % canvas.height;
+        // 밤하늘 - 반짝이는 별
+        const time = Date.now() * 0.001;
+        for (let i = 0; i < 60; i++) {
+            const x = (i * 137 + 50) % canvas.width;
+            const y = (i * 89 + 30) % canvas.height;
             const size = (i % 3) + 1;
+            const twinkle = 0.5 + Math.sin(time * 2 + i) * 0.5;
+            ctx.fillStyle = `rgba(255, 255, 255, ${twinkle})`;
             ctx.beginPath();
             ctx.arc(x, y, size, 0, Math.PI * 2);
             ctx.fill();
         }
         // 달
         ctx.fillStyle = '#FFFACD';
+        ctx.shadowColor = '#FFFACD';
+        ctx.shadowBlur = 20;
         ctx.beginPath();
-        ctx.arc(canvas.width * 0.8, canvas.height * 0.2, 30, 0, Math.PI * 2);
+        ctx.arc(canvas.width * 0.8, canvas.height * 0.18, 35, 0, Math.PI * 2);
         ctx.fill();
+        ctx.shadowBlur = 0;
     } else if (themeIndex === 3) {
-        // 우주 - 별 + 은하
-        ctx.fillStyle = '#fff';
-        for (let i = 0; i < 80; i++) {
+        // 우주 - 별 + 성운
+        const time = Date.now() * 0.0005;
+        // 성운 효과
+        ctx.fillStyle = 'rgba(150, 100, 200, 0.1)';
+        ctx.beginPath();
+        ctx.ellipse(canvas.width * 0.3, canvas.height * 0.4, 150, 80, time, 0, Math.PI * 2);
+        ctx.fill();
+        // 별
+        for (let i = 0; i < 100; i++) {
             const x = (i * 137) % canvas.width;
             const y = (i * 89) % canvas.height;
             const size = (i % 2) + 0.5;
-            ctx.globalAlpha = 0.3 + (i % 7) * 0.1;
+            ctx.fillStyle = `rgba(255, 255, 255, ${0.3 + (i % 7) * 0.1})`;
             ctx.beginPath();
             ctx.arc(x, y, size, 0, Math.PI * 2);
             ctx.fill();
         }
-        ctx.globalAlpha = 1;
         // 행성
-        ctx.fillStyle = '#9B59B6';
+        const planetGradient = ctx.createRadialGradient(
+            canvas.width * 0.9 - 5, canvas.height * 0.15 - 5, 0,
+            canvas.width * 0.9, canvas.height * 0.15, 30
+        );
+        planetGradient.addColorStop(0, '#C39BD3');
+        planetGradient.addColorStop(1, '#6C3483');
+        ctx.fillStyle = planetGradient;
         ctx.beginPath();
-        ctx.arc(canvas.width * 0.9, canvas.height * 0.15, 25, 0, Math.PI * 2);
+        ctx.arc(canvas.width * 0.9, canvas.height * 0.15, 28, 0, Math.PI * 2);
         ctx.fill();
+        // 행성 고리
+        ctx.strokeStyle = 'rgba(200, 180, 220, 0.6)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(canvas.width * 0.9, canvas.height * 0.15, 45, 12, -0.3, 0, Math.PI * 2);
+        ctx.stroke();
     } else if (themeIndex === 4) {
-        // 네온 시티 - 네온 라인
-        ctx.strokeStyle = 'rgba(255, 0, 255, 0.3)';
+        // 네온 시티 - 빌딩 실루엣 + 네온
+        // 빌딩 실루엣
+        ctx.fillStyle = 'rgba(20, 20, 40, 0.8)';
+        for (let i = 0; i < 15; i++) {
+            const bx = i * (canvas.width / 12);
+            const bh = 50 + Math.random() * 100;
+            ctx.fillRect(bx, canvas.height - bh, canvas.width / 15, bh);
+        }
+        // 네온 라인
+        const neonTime = Date.now() * 0.003;
+        ctx.strokeStyle = `rgba(255, 0, 255, ${0.3 + Math.sin(neonTime) * 0.2})`;
         ctx.lineWidth = 2;
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 4; i++) {
             ctx.beginPath();
-            ctx.moveTo(0, canvas.height * (0.2 + i * 0.15));
-            ctx.lineTo(canvas.width, canvas.height * (0.25 + i * 0.15));
+            ctx.moveTo(0, canvas.height * (0.3 + i * 0.12));
+            ctx.lineTo(canvas.width, canvas.height * (0.35 + i * 0.12));
             ctx.stroke();
         }
-        ctx.strokeStyle = 'rgba(0, 255, 255, 0.3)';
+        ctx.strokeStyle = `rgba(0, 255, 255, ${0.3 + Math.cos(neonTime) * 0.2})`;
         for (let i = 0; i < 3; i++) {
             ctx.beginPath();
             ctx.moveTo(canvas.width * (0.2 + i * 0.3), 0);
-            ctx.lineTo(canvas.width * (0.25 + i * 0.3), canvas.height);
+            ctx.lineTo(canvas.width * (0.25 + i * 0.3), canvas.height * 0.6);
             ctx.stroke();
         }
     }
 
     // 회차 표시 (2회차 이상)
     if (currentCycle > 1) {
-        ctx.fillStyle = 'rgba(255, 215, 0, 0.1)';
-        ctx.font = `bold ${80 + currentCycle * 10}px "Segoe UI"`;
+        ctx.fillStyle = 'rgba(255, 215, 0, 0.15)';
+        ctx.font = `bold ${60 + currentCycle * 8}px "Press Start 2P", sans-serif`;
         ctx.textAlign = 'center';
-        ctx.fillText(`${currentCycle}`, canvas.width / 2, canvas.height / 2 + 30);
+        ctx.fillText(`${currentCycle}`, canvas.width / 2, canvas.height / 2 + 20);
     }
+}
+
+// 패럴랙스 구름 업데이트
+function updateParallaxClouds() {
+    clouds.forEach(cloud => {
+        cloud.x -= cloud.speed * pipeConfig.speed;
+        if (cloud.x + cloud.size * 2 < 0) {
+            cloud.x = canvas.width + cloud.size;
+            cloud.y = Math.random() * canvas.height * 0.5;
+        }
+    });
+}
+
+// 패럴랙스 구름 그리기
+function drawParallaxClouds() {
+    clouds.forEach(cloud => {
+        ctx.fillStyle = `rgba(255, 255, 255, ${cloud.opacity})`;
+        drawCloud(cloud.x, cloud.y, cloud.size);
+    });
 }
 
 function drawCloud(x, y, size) {
@@ -408,53 +527,98 @@ function drawCloud(x, y, size) {
     ctx.fill();
 }
 
-// 플레이어 그리기 (이미지 사용)
+// 플레이어 그리기 (애니메이션 스프라이트)
 function drawPlayer() {
     ctx.save();
     ctx.translate(player.x, player.y);
 
-    // 기울기 (속도에 따라) - 더 부드럽게
-    const rotation = Math.min(Math.max(player.velocity * 2, -20), 20) * Math.PI / 180;
+    // 기울기 (속도에 따라)
+    const rotation = Math.min(Math.max(player.velocity * 3, -30), 30) * Math.PI / 180;
     ctx.rotate(rotation);
 
-    if (playerImageLoaded) {
-        // 이미지로 그리기
-        const imgWidth = player.width;
-        const imgHeight = player.height;
+    // 애니메이션 업데이트
+    if (gameState === GameState.PLAYING) {
+        birdAnimationTimer++;
+        if (birdAnimationTimer >= BIRD_ANIMATION_SPEED) {
+            birdAnimationTimer = 0;
+            currentBirdFrame = (currentBirdFrame + 1) % BIRD_FRAME_COUNT;
+        }
+    }
 
-        // 눌렀을 때 살짝 커지는 효과
-        const scale = isPressed ? 1.1 : 1;
+    // 눌렀을 때/부활 무적일 때 효과
+    const scale = isPressed ? 1.15 : 1;
+    const isInvincible = reviveInvincibleTime > Date.now() || practiceMode;
+
+    if (isInvincible && gameState === GameState.PLAYING) {
+        // 무적 상태 글로우 효과
+        ctx.shadowColor = '#00FFFF';
+        ctx.shadowBlur = 20 + Math.sin(Date.now() * 0.01) * 10;
+    }
+
+    if (birdSpritesLoaded >= BIRD_FRAME_COUNT && birdSprites[currentBirdFrame]) {
+        // 스프라이트 애니메이션으로 그리기
+        const sprite = birdSprites[currentBirdFrame];
+        const imgWidth = player.width * scale;
+        const imgHeight = player.height * scale;
 
         ctx.drawImage(
-            playerImage,
-            -imgWidth * scale / 2,
-            -imgHeight * scale / 2,
-            imgWidth * scale,
-            imgHeight * scale
+            sprite,
+            -imgWidth / 2,
+            -imgHeight / 2,
+            imgWidth,
+            imgHeight
         );
     } else {
-        // 이미지 로드 전 대체 그리기
-        ctx.fillStyle = playerColors.player;
-        ctx.strokeStyle = playerColors.playerStroke;
-        ctx.lineWidth = 3;
+        // 스프라이트 로드 전 대체 그리기 (귀여운 새 모양)
+        const size = player.width / 2;
 
+        // 몸통
+        ctx.fillStyle = '#FFD93D';
         ctx.beginPath();
-        ctx.arc(0, 0, player.width / 2, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, size, size * 0.8, 0, 0, Math.PI * 2);
         ctx.fill();
+
+        // 몸통 테두리
+        ctx.strokeStyle = '#F4A900';
+        ctx.lineWidth = 3;
         ctx.stroke();
 
-        // 눈
-        ctx.fillStyle = 'white';
+        // 날개
+        ctx.fillStyle = '#FF9500';
+        const wingY = isPressed ? -5 : 5;
         ctx.beginPath();
-        ctx.arc(8, -5, 8, 0, Math.PI * 2);
+        ctx.ellipse(-size * 0.3, wingY, size * 0.4, size * 0.25, -0.3, 0, Math.PI * 2);
         ctx.fill();
 
+        // 눈 (흰자)
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(size * 0.3, -size * 0.2, size * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 눈 (눈동자)
         ctx.fillStyle = 'black';
         ctx.beginPath();
-        ctx.arc(10, -5, 4, 0, Math.PI * 2);
+        ctx.arc(size * 0.4, -size * 0.15, size * 0.18, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 눈 하이라이트
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(size * 0.45, -size * 0.25, size * 0.08, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 부리
+        ctx.fillStyle = '#FF6B35';
+        ctx.beginPath();
+        ctx.moveTo(size * 0.7, 0);
+        ctx.lineTo(size * 1.1, size * 0.1);
+        ctx.lineTo(size * 0.7, size * 0.25);
+        ctx.closePath();
         ctx.fill();
     }
 
+    ctx.shadowBlur = 0;
     ctx.restore();
 }
 
@@ -767,6 +931,7 @@ function update(deltaTime) {
             score++;
             scoreDisplay.textContent = score;
             createParticles(player.x, player.y, 5, '#FFD700');
+            playSound('score');
 
             // 난이도별 점수마다 토큰 획득
             const threshold = settings.tokenThreshold;
@@ -785,6 +950,7 @@ function update(deltaTime) {
                 currentCycle = Math.floor((currentLevel - 1) / LEVELS_PER_CYCLE) + 1;
                 levelUpDisplay = 120; // 2초간 표시 (60fps 기준)
                 createParticles(canvas.width/2, canvas.height/2, 20 + currentCycle * 5, '#FF69B4');
+                playSound('levelup');
             }
         }
     });
@@ -849,6 +1015,7 @@ function update(deltaTime) {
 // 게임 오버
 function gameOver() {
     gameState = GameState.GAMEOVER;
+    playSound('hit');
 
     // 최고 점수 업데이트 (난이도별)
     if (score > bestScore) {
@@ -925,6 +1092,7 @@ function earnToken() {
     saveTokens();
     tokenDisplay_timer = 90; // 1.5초간 표시
     createParticles(canvas.width - 60, 50, 10, '#FFD700');
+    playSound('token');
 }
 
 // 되살리기 함수
@@ -1178,6 +1346,9 @@ function handlePress() {
         return; // 게임 시작 시에는 바로 상승하지 않음
     }
     if (gameState === GameState.PLAYING) {
+        if (!isPressed) {
+            playSound('jump');
+        }
         isPressed = true;
     }
 }
@@ -1301,6 +1472,7 @@ if (reviveBtn) {
 
 // 초기화
 resetPlayer();
+initClouds();
 updateTokenDisplays();
 bestScoreEl.textContent = bestScore;
 requestAnimationFrame(gameLoop);

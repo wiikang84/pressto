@@ -9,8 +9,8 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%);
+    font-family: 'Press Start 2P', 'Segoe UI', sans-serif;
     overflow: hidden;
     touch-action: none;
     -webkit-touch-callout: none;
@@ -30,8 +30,12 @@ body {
     width: 100%;
     height: 100%;
     display: block;
-    border-radius: 12px;
-    box-shadow: 0 0 40px rgba(0, 200, 255, 0.3);
+    border-radius: 8px;
+    box-shadow:
+        0 0 0 4px #FFD700,
+        0 0 40px rgba(255, 215, 0, 0.3),
+        inset 0 0 60px rgba(0, 0, 0, 0.3);
+    image-rendering: pixelated;
 }
 
 #ui-overlay {
@@ -45,13 +49,16 @@ body {
 
 #score-display {
     position: absolute;
-    top: 30px;
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 48px;
-    font-weight: bold;
+    font-size: 32px;
     color: white;
-    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+    text-shadow:
+        3px 3px 0 #000,
+        -1px -1px 0 #000,
+        1px -1px 0 #000,
+        -1px 1px 0 #000;
     z-index: 10;
     opacity: 0;
     transition: opacity 0.3s;
@@ -64,12 +71,11 @@ body {
 /* 토큰 표시 (게임 중) */
 #token-display {
     position: absolute;
-    top: 30px;
+    top: 80px;
     right: 20px;
-    font-size: 20px;
-    font-weight: bold;
+    font-size: 14px;
     color: #FFD700;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    text-shadow: 2px 2px 0 #000;
     z-index: 10;
     opacity: 0;
     transition: opacity 0.3s;
@@ -97,78 +103,91 @@ body {
     text-align: center;
     padding: 20px;
     pointer-events: auto;
+    background: rgba(0, 0, 0, 0.7);
 }
 
 .screen.hidden {
     display: none;
 }
 
+#start-screen {
+    background: transparent;
+}
+
 #start-screen h1 {
-    font-size: 56px;
-    margin-bottom: 0;
-    background: linear-gradient(45deg, #FFD700, #FFA500);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-shadow: none;
-    animation: pulse 2s ease-in-out infinite;
+    font-size: 42px;
+    margin-bottom: 5px;
+    color: #FFD700;
+    text-shadow:
+        4px 4px 0 #B8860B,
+        -2px -2px 0 #FFF8DC;
+    animation: title-bounce 1s ease-in-out infinite;
+}
+
+@keyframes title-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
 }
 
 #start-screen .subtitle {
-    font-size: 20px;
-    color: #FFD700;
-    margin-bottom: 15px;
+    font-size: 14px;
+    color: #87CEEB;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 0 #000;
 }
 
 /* 토큰 정보 (시작 화면) */
 .token-info {
-    background: rgba(255, 215, 0, 0.2);
-    padding: 8px 20px;
-    border-radius: 20px;
+    background: linear-gradient(180deg, #4a3000 0%, #2a1a00 100%);
+    padding: 10px 25px;
+    border-radius: 8px;
     margin-bottom: 15px;
-    border: 1px solid #FFD700;
+    border: 3px solid #FFD700;
+    box-shadow: 0 4px 0 #8B4513;
 }
 
 .token-info::before {
-    content: '🪙 보유 토큰: ';
+    content: '🪙 ';
     color: #FFD700;
 }
 
 #start-tokens {
-    color: #fff;
-    font-weight: bold;
+    color: #FFD700;
+    font-size: 16px;
 }
 
 .how-to-play {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 10px 25px;
-    border-radius: 15px;
-    margin-bottom: 15px;
+    background: linear-gradient(180deg, #1a3a1a 0%, #0a2a0a 100%);
+    padding: 15px 30px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 3px solid #4CAF50;
+    box-shadow: 0 4px 0 #2E7D32;
 }
 
 .how-to-play > p:first-child {
-    font-size: 16px;
-    font-weight: bold;
-    color: #FFD700;
-    margin-bottom: 5px;
+    font-size: 12px;
+    color: #4CAF50;
+    margin-bottom: 10px;
 }
 
 #start-screen .instruction {
-    font-size: 14px;
-    color: #ddd;
-    margin: 3px 0;
+    font-size: 10px;
+    color: #90EE90;
+    margin: 5px 0;
+    line-height: 1.8;
 }
 
 .select-difficulty {
-    font-size: 18px;
+    font-size: 12px;
     color: #aaa;
     margin-bottom: 15px;
 }
 
-/* 난이도 버튼 */
+/* 난이도 버튼 - 픽셀 스타일 */
 .difficulty-buttons {
     display: flex;
-    gap: 15px;
+    gap: 20px;
     flex-wrap: wrap;
     justify-content: center;
 }
@@ -177,51 +196,69 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 15px 25px;
+    padding: 15px 20px;
     border: none;
-    border-radius: 15px;
+    border-radius: 0;
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    min-width: 100px;
+    transition: transform 0.1s;
+    min-width: 110px;
+    border: 4px solid;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.5);
+    position: relative;
+}
+
+.diff-btn::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    right: 4px;
+    height: 30%;
+    background: rgba(255,255,255,0.2);
+    pointer-events: none;
 }
 
 .diff-btn.easy {
-    background: linear-gradient(135deg, #4CAF50, #8BC34A);
+    background: linear-gradient(180deg, #5cb85c 0%, #449d44 100%);
+    border-color: #3c763d;
     color: white;
 }
 
 .diff-btn.middle {
-    background: linear-gradient(135deg, #FF9800, #FFC107);
+    background: linear-gradient(180deg, #f0ad4e 0%, #ec971f 100%);
+    border-color: #c77c11;
     color: white;
 }
 
 .diff-btn.hard {
-    background: linear-gradient(135deg, #f44336, #E91E63);
+    background: linear-gradient(180deg, #d9534f 0%, #c9302c 100%);
+    border-color: #a02622;
     color: white;
 }
 
 .diff-btn:hover {
-    transform: scale(1.1);
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 0 rgba(0,0,0,0.5);
 }
 
 .diff-btn:active {
-    transform: scale(0.95);
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 rgba(0,0,0,0.5);
 }
 
 .diff-icon {
-    font-size: 28px;
-    margin-bottom: 5px;
+    font-size: 32px;
+    margin-bottom: 8px;
 }
 
 .diff-name {
-    font-size: 18px;
-    font-weight: bold;
+    font-size: 14px;
 }
 
 .diff-desc {
-    font-size: 12px;
+    font-size: 8px;
     opacity: 0.9;
+    margin-top: 5px;
 }
 
 @keyframes pulse {
@@ -229,32 +266,42 @@ body {
     50% { transform: scale(1.05); }
 }
 
-@keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
+#gameover-screen {
+    background: rgba(0, 0, 0, 0.85);
 }
 
 #gameover-screen h2 {
-    font-size: 48px;
-    color: #ff6b6b;
+    font-size: 36px;
+    color: #ff4444;
     margin-bottom: 20px;
+    text-shadow:
+        3px 3px 0 #8B0000,
+        -2px -2px 0 #000;
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
 }
 
 .score-box {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 15px 35px;
-    border-radius: 15px;
+    background: linear-gradient(180deg, #2a2a4a 0%, #1a1a3a 100%);
+    padding: 20px 40px;
+    border-radius: 0;
     margin-bottom: 20px;
+    border: 4px solid #6366f1;
+    box-shadow: 0 6px 0 #4338ca;
 }
 
 .score-box p {
-    font-size: 22px;
-    margin: 8px 0;
+    font-size: 14px;
+    margin: 10px 0;
 }
 
 .score-box span {
     color: #FFD700;
-    font-weight: bold;
 }
 
 /* 되살리기 섹션 */
@@ -263,104 +310,105 @@ body {
 }
 
 .token-count {
-    font-size: 20px;
+    font-size: 14px;
     color: #FFD700;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.revive-btn, #restart-btn, #home-btn, .pause-menu-btn {
+    font-family: 'Press Start 2P', sans-serif;
+    padding: 15px 25px;
+    font-size: 12px;
+    border: 4px solid;
+    border-radius: 0;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.1s;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.5);
+    position: relative;
+}
+
+.revive-btn::after, #restart-btn::after, #home-btn::after, .pause-menu-btn::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    right: 4px;
+    height: 30%;
+    background: rgba(255,255,255,0.2);
+    pointer-events: none;
 }
 
 .revive-btn {
-    padding: 12px 30px;
-    font-size: 18px;
-    background: linear-gradient(45deg, #9C27B0, #E91E63);
-    border: none;
-    border-radius: 25px;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+    background: linear-gradient(180deg, #9C27B0 0%, #7B1FA2 100%);
+    border-color: #6A1B9A;
 }
 
 .revive-btn:hover:not(:disabled) {
-    transform: scale(1.05);
-    box-shadow: 0 5px 20px rgba(156, 39, 176, 0.5);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 0 rgba(0,0,0,0.5);
 }
 
 .revive-btn:active:not(:disabled) {
-    transform: scale(0.95);
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 rgba(0,0,0,0.5);
 }
 
 .revive-btn:disabled {
     background: #555;
+    border-color: #333;
     cursor: not-allowed;
     opacity: 0.5;
 }
 
 #restart-btn {
-    padding: 12px 35px;
-    font-size: 18px;
-    background: linear-gradient(45deg, #607D8B, #78909C);
-    border: none;
-    border-radius: 25px;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    pointer-events: auto;
-}
-
-#restart-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 5px 20px rgba(96, 125, 139, 0.4);
-}
-
-#restart-btn:active {
-    transform: scale(0.95);
+    background: linear-gradient(180deg, #607D8B 0%, #455A64 100%);
+    border-color: #37474F;
 }
 
 #home-btn {
-    padding: 12px 35px;
-    font-size: 18px;
-    background: linear-gradient(45deg, #2196F3, #03A9F4);
-    border: none;
-    border-radius: 25px;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    pointer-events: auto;
+    background: linear-gradient(180deg, #2196F3 0%, #1976D2 100%);
+    border-color: #1565C0;
     margin-top: 10px;
 }
 
-#home-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 5px 20px rgba(33, 150, 243, 0.4);
+#restart-btn:hover, #home-btn:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 0 rgba(0,0,0,0.5);
 }
 
-#home-btn:active {
-    transform: scale(0.95);
+#restart-btn:active, #home-btn:active {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 rgba(0,0,0,0.5);
 }
 
 /* 게임 중 일시정지 버튼 */
 #pause-btn {
     position: absolute;
-    top: 20px;
-    left: 20px;
-    width: 50px;
-    height: 50px;
-    font-size: 24px;
-    background: rgba(0, 0, 0, 0.5);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
+    top: 15px;
+    left: 15px;
+    width: 45px;
+    height: 45px;
+    font-size: 20px;
+    background: linear-gradient(180deg, #333 0%, #222 100%);
+    border: 3px solid #555;
+    border-radius: 0;
     color: white;
     cursor: pointer;
     pointer-events: auto;
-    transition: transform 0.2s, background 0.2s;
+    transition: transform 0.1s;
     z-index: 20;
+    box-shadow: 0 4px 0 #111;
 }
 
 #pause-btn:hover {
-    background: rgba(0, 0, 0, 0.7);
-    transform: scale(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 #111;
+}
+
+#pause-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #111;
 }
 
 #pause-btn.hidden {
@@ -369,38 +417,33 @@ body {
 
 /* 일시정지 화면 */
 #pause-screen {
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.9);
     z-index: 100;
 }
 
 #pause-screen h2 {
-    font-size: 48px;
+    font-size: 32px;
     color: #fff;
     margin-bottom: 30px;
+    text-shadow: 3px 3px 0 #000;
 }
 
 .pause-menu-btn {
     display: block;
-    width: 200px;
-    padding: 15px 30px;
+    width: 220px;
     margin: 10px auto;
-    font-size: 18px;
-    background: linear-gradient(45deg, #667eea, #764ba2);
-    border: none;
-    border-radius: 25px;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+    background: linear-gradient(180deg, #667eea 0%, #5a67d8 100%);
+    border-color: #4c51bf;
 }
 
 .pause-menu-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 5px 20px rgba(102, 126, 234, 0.5);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 0 rgba(0,0,0,0.5);
 }
 
 .pause-menu-btn:active {
-    transform: scale(0.95);
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 rgba(0,0,0,0.5);
 }
 
 /* 화면 회전 메시지 */
@@ -411,7 +454,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%);
     z-index: 9999;
     justify-content: center;
     align-items: center;
@@ -428,7 +471,7 @@ body {
 }
 
 .rotate-content p {
-    font-size: 24px;
+    font-size: 16px;
     margin-top: 20px;
     color: #FFD700;
 }
@@ -462,67 +505,71 @@ body {
     }
 
     #start-screen h1 {
-        font-size: 32px;
+        font-size: 28px;
     }
 
     #start-screen .subtitle {
-        font-size: 14px;
+        font-size: 10px;
         margin-bottom: 10px;
     }
 
     .token-info {
-        padding: 5px 15px;
+        padding: 8px 15px;
         margin-bottom: 10px;
-        font-size: 14px;
+        font-size: 10px;
+    }
+
+    #start-tokens {
+        font-size: 12px;
     }
 
     .how-to-play {
-        padding: 8px 20px;
+        padding: 10px 20px;
         margin-bottom: 10px;
     }
 
     .how-to-play > p:first-child {
-        font-size: 14px;
+        font-size: 10px;
     }
 
     #start-screen .instruction {
-        font-size: 12px;
+        font-size: 8px;
     }
 
     .select-difficulty {
-        font-size: 14px;
+        font-size: 10px;
         margin-bottom: 10px;
     }
 
     .diff-btn {
-        padding: 10px 18px;
-        min-width: 80px;
+        padding: 10px 15px;
+        min-width: 90px;
     }
 
     .diff-icon {
-        font-size: 22px;
+        font-size: 24px;
     }
 
     .diff-name {
-        font-size: 14px;
-    }
-
-    .diff-desc {
         font-size: 10px;
     }
 
+    .diff-desc {
+        font-size: 7px;
+    }
+
     #score-display {
-        font-size: 32px;
-        top: 15px;
+        font-size: 24px;
+        top: 10px;
     }
 
     #token-display {
-        font-size: 16px;
-        top: 15px;
+        font-size: 10px;
+        top: 50px;
     }
 
     #gameover-screen h2 {
-        font-size: 28px;
+        font-size: 24px;
         margin-bottom: 10px;
     }
 
@@ -532,7 +579,7 @@ body {
     }
 
     .score-box p {
-        font-size: 16px;
+        font-size: 10px;
     }
 
     .revive-section {
@@ -540,42 +587,35 @@ body {
     }
 
     .token-count {
-        font-size: 16px;
+        font-size: 10px;
     }
 
-    .revive-btn {
-        padding: 8px 20px;
-        font-size: 14px;
-    }
-
-    #restart-btn {
-        padding: 8px 25px;
-        font-size: 14px;
+    .revive-btn, #restart-btn, #home-btn {
+        padding: 10px 20px;
+        font-size: 10px;
     }
 
     #home-btn {
-        padding: 8px 25px;
-        font-size: 14px;
         margin-top: 8px;
     }
 
     #pause-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 18px;
-        top: 15px;
-        left: 15px;
+        width: 35px;
+        height: 35px;
+        font-size: 16px;
+        top: 10px;
+        left: 10px;
     }
 
     #pause-screen h2 {
-        font-size: 32px;
+        font-size: 24px;
         margin-bottom: 20px;
     }
 
     .pause-menu-btn {
-        width: 160px;
-        padding: 12px 20px;
-        font-size: 14px;
+        width: 180px;
+        padding: 10px 15px;
+        font-size: 10px;
     }
 }
 
@@ -589,7 +629,7 @@ body {
     }
 
     .diff-btn {
-        padding: 12px 20px;
-        min-width: 90px;
+        padding: 12px 15px;
+        min-width: 85px;
     }
 }
