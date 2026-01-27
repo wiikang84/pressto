@@ -102,31 +102,31 @@ const characters = {
         id: 'ppuul',
         name: '뿌울',
         desc: '쿨한 새',
-        price: 50,
-        unlocked: false,
+        price: 0,
+        unlocked: true,
         colors: { body: '#4FC3F7', bodyStroke: '#0288D1', wing: '#03A9F4', beak: '#FF9800', eye: '#000' }
     },
     ppuseul: {
         id: 'ppuseul',
         name: '뿌슬',
         desc: '슬픈 새',
-        price: 50,
-        unlocked: false,
+        price: 0,
+        unlocked: true,
         colors: { body: '#B39DDB', bodyStroke: '#7E57C2', wing: '#9575CD', beak: '#FFAB91', eye: '#000' }
     },
     ppuban: {
         id: 'ppuban',
         name: '뿌반',
         desc: '신난 새',
-        price: 100,
-        unlocked: false,
+        price: 0,
+        unlocked: true,
         colors: { body: '#81C784', bodyStroke: '#4CAF50', wing: '#66BB6A', beak: '#FFCC02', eye: '#000' }
     }
 };
 
 // 현재 선택된 캐릭터
 let currentCharacter = localStorage.getItem('pressto_character') || 'ppukku';
-let unlockedCharacters = JSON.parse(localStorage.getItem('pressto_unlocked_chars')) || ['ppukku', 'ppuang', 'ppuing'];
+let unlockedCharacters = Object.keys(characters); // 모든 캐릭터 해금
 
 // 캐릭터 잠금 해제
 function unlockCharacter(charId) {
@@ -487,33 +487,17 @@ function createCharacterGrid() {
         name.className = 'character-name';
         name.textContent = char.name;
 
-        const price = document.createElement('span');
-        price.className = 'character-price';
-        if (unlockedCharacters.includes(char.id)) {
-            price.textContent = currentCharacter === char.id ? '✓ 선택됨' : '보유중';
-        } else {
-            price.textContent = `🪙 ${char.price}`;
-        }
+        const status = document.createElement('span');
+        status.className = 'character-price';
+        status.textContent = currentCharacter === char.id ? '✓ 선택됨' : '';
 
         card.appendChild(canvas);
         card.appendChild(name);
-        card.appendChild(price);
+        card.appendChild(status);
 
         card.addEventListener('click', () => {
-            if (unlockedCharacters.includes(char.id)) {
-                selectCharacter(char.id);
-                createCharacterGrid();
-            } else if (tokens >= char.price) {
-                if (confirm(`${char.name}을(를) ${char.price} 토큰으로 구매할까요?`)) {
-                    if (unlockCharacter(char.id)) {
-                        selectCharacter(char.id);
-                        createCharacterGrid();
-                        updateTokenDisplays();
-                    }
-                }
-            } else {
-                alert('토큰이 부족합니다!');
-            }
+            selectCharacter(char.id);
+            createCharacterGrid();
         });
 
         characterGrid.appendChild(card);
@@ -1648,34 +1632,6 @@ function update(deltaTime) {
     // 화면 밖 파이프 제거
     pipes = pipes.filter(pipe => pipe.x + pipe.width > 0);
 
-    // 5레벨마다 수집용 토큰 생성
-    if (currentLevel > lastTokenLevel && currentLevel % 5 === 0) {
-        spawnCollectibleToken();
-        lastTokenLevel = currentLevel;
-    }
-
-    // 수집용 토큰 업데이트
-    collectibleTokens.forEach(token => {
-        if (token.collected) return;
-
-        // 토큰 이동
-        token.x -= pipeConfig.speed * speedMultiplier;
-
-        // 플레이어와 충돌 체크 (수집)
-        const dx = player.x - token.x;
-        const dy = player.y - token.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance < token.radius + player.width / 2 - 10) {
-            token.collected = true;
-            earnToken();
-            createParticles(token.x, token.y, 15, '#FFD700');
-        }
-    });
-
-    // 화면 밖 토큰 제거
-    collectibleTokens = collectibleTokens.filter(token => token.x + token.radius > 0 && !token.collected);
-
     // 파티클 업데이트
     particles.forEach(p => {
         p.x += p.vx;
@@ -1933,17 +1889,21 @@ function drawLevelUI() {
 
     ctx.textAlign = 'left';
 
-    // 회차 표시 (2회차 이상)
-    if (currentCycle > 1) {
+    // Hell 모드 또는 회차 표시
+    if (currentLevel >= 51) {
+        ctx.fillStyle = '#FF4444';
+        ctx.font = 'bold 12px "Segoe UI"';
+        ctx.fillText(`🔥 Hell 모드`, levelBoxX + 5, 25);
+    } else if (currentCycle > 1) {
         ctx.fillStyle = '#FFD700';
         ctx.font = 'bold 12px "Segoe UI"';
         ctx.fillText(`${currentCycle}회차`, levelBoxX + 5, 25);
     }
 
     // 레벨
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = currentLevel >= 51 ? '#FF6666' : '#fff';
     ctx.font = 'bold 20px "Segoe UI"';
-    ctx.fillText(`Lv.${currentLevel}`, levelBoxX + 5, currentCycle > 1 ? 48 : 38);
+    ctx.fillText(`Lv.${currentLevel}`, levelBoxX + 5, (currentLevel >= 51 || currentCycle > 1) ? 48 : 38);
 
     // 난이도 표시 (우측 상단)
     const settings = difficultySettings[currentDifficulty];
@@ -1976,10 +1936,21 @@ function drawLevelUI() {
         ctx.translate(canvas.width/2, canvas.height/2);
         ctx.scale(scale, scale);
 
-        // 회차 변경 시 특별 표시
+        // Hell 모드 또는 회차 변경 시 특별 표시
         const isNewCycle = (currentLevel - 1) % LEVELS_PER_CYCLE === 0 && currentLevel > 1;
+        const isHellMode = currentLevel === 51;
 
-        if (isNewCycle) {
+        if (isHellMode) {
+            // Hell 모드 진입!
+            ctx.fillStyle = '#FF4444';
+            ctx.font = 'bold 60px "Segoe UI"';
+            ctx.textAlign = 'center';
+            ctx.fillText('🔥 Hell 모드 🔥', 0, -20);
+
+            ctx.fillStyle = '#FF6666';
+            ctx.font = 'bold 24px "Segoe UI"';
+            ctx.fillText('진정한 도전이 시작됩니다!', 0, 25);
+        } else if (isNewCycle) {
             // 새 회차 시작
             ctx.fillStyle = '#FFD700';
             ctx.font = `bold ${50 + currentCycle * 5}px "Segoe UI"`;
@@ -1991,7 +1962,7 @@ function drawLevelUI() {
             ctx.fillText('더 강해진 도전이 시작됩니다!', 0, 25);
         } else {
             // 일반 레벨업
-            ctx.fillStyle = '#FF69B4';
+            ctx.fillStyle = currentLevel > 51 ? '#FF6666' : '#FF69B4';
             ctx.font = 'bold 48px "Segoe UI"';
             ctx.textAlign = 'center';
             ctx.fillText(`LEVEL ${currentLevel}!`, 0, 0);
@@ -2009,7 +1980,6 @@ function drawLevelUI() {
 function render() {
     drawBackground();
     drawPipes();
-    drawCollectibleTokens();
     drawPlayer();
     drawParticles();
     drawPracticeUI();
