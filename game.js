@@ -2100,16 +2100,30 @@ pauseHomeBtn.addEventListener('click', (e) => {
     goToHome();
 });
 
+// 전체화면 요청 함수
+function requestFullscreen() {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) {
+        elem.requestFullscreen().catch(() => {});
+    } else if (elem.webkitRequestFullscreen) {
+        elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) {
+        elem.msRequestFullscreen();
+    }
+}
+
 // 난이도 버튼 이벤트
 document.querySelectorAll('.diff-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
         e.stopPropagation();
+        requestFullscreen();
         const difficulty = btn.dataset.difficulty;
         startGame(difficulty);
     });
     btn.addEventListener('touchend', (e) => {
         e.preventDefault();
         e.stopPropagation();
+        requestFullscreen();
         const difficulty = btn.dataset.difficulty;
         startGame(difficulty);
     });
