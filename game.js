@@ -24,6 +24,49 @@ const characterGrid = document.getElementById('character-grid');
 const characterBackBtn = document.getElementById('character-back-btn');
 const characterPreview = document.getElementById('character-preview');
 const characterPreviewCtx = characterPreview ? characterPreview.getContext('2d') : null;
+const fullscreenBtn = document.getElementById('fullscreen-btn');
+
+// iOS 감지
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+// 전체화면 지원 여부
+const fullscreenSupported = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
+
+// 이미 전체화면인지 또는 PWA로 실행중인지 확인
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+const isFullscreen = () => document.fullscreenElement || document.webkitFullscreenElement;
+
+// 전체화면 버튼 초기화
+if (fullscreenBtn) {
+    if (isStandalone || isFullscreen()) {
+        fullscreenBtn.classList.add('hidden');
+    } else if (isIOS) {
+        fullscreenBtn.textContent = '📱 홈화면에 추가하면 전체화면!';
+        fullscreenBtn.addEventListener('click', () => {
+            alert('전체화면으로 플레이하려면:\n\n1. Safari 하단의 공유 버튼(□↑) 터치\n2. "홈 화면에 추가" 선택\n3. 추가된 아이콘으로 실행!');
+        });
+    } else {
+        fullscreenBtn.addEventListener('click', () => {
+            requestFullscreen();
+            setTimeout(() => {
+                if (isFullscreen()) {
+                    fullscreenBtn.classList.add('hidden');
+                }
+            }, 500);
+        });
+    }
+}
+
+// 전체화면 변경 감지
+document.addEventListener('fullscreenchange', () => {
+    if (fullscreenBtn) {
+        if (isFullscreen()) {
+            fullscreenBtn.classList.add('hidden');
+        } else {
+            fullscreenBtn.classList.remove('hidden');
+        }
+    }
+});
 
 // 캐릭터 정의
 const characters = {
