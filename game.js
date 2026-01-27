@@ -42,11 +42,30 @@ if (fullscreenBtn) {
         fullscreenBtn.classList.add('hidden');
     } else if (isIOS) {
         fullscreenBtn.textContent = '📱 홈화면에 추가하면 전체화면!';
-        fullscreenBtn.addEventListener('click', () => {
+        fullscreenBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            alert('전체화면으로 플레이하려면:\n\n1. Safari 하단의 공유 버튼(□↑) 터치\n2. "홈 화면에 추가" 선택\n3. 추가된 아이콘으로 실행!');
+        });
+        fullscreenBtn.addEventListener('touchend', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
             alert('전체화면으로 플레이하려면:\n\n1. Safari 하단의 공유 버튼(□↑) 터치\n2. "홈 화면에 추가" 선택\n3. 추가된 아이콘으로 실행!');
         });
     } else {
-        fullscreenBtn.addEventListener('click', () => {
+        fullscreenBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            requestFullscreen();
+            setTimeout(() => {
+                if (isFullscreen()) {
+                    fullscreenBtn.classList.add('hidden');
+                }
+            }, 500);
+        });
+        fullscreenBtn.addEventListener('touchend', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
             requestFullscreen();
             setTimeout(() => {
                 if (isFullscreen()) {
@@ -2159,14 +2178,12 @@ function requestFullscreen() {
 document.querySelectorAll('.diff-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        requestFullscreen();
         const difficulty = btn.dataset.difficulty;
         startGame(difficulty);
     });
     btn.addEventListener('touchend', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        requestFullscreen();
         const difficulty = btn.dataset.difficulty;
         startGame(difficulty);
     });
