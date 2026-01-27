@@ -10,7 +10,7 @@ body {
     align-items: center;
     min-height: 100vh;
     min-height: 100dvh;
-    background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%);
+    background: #000;
     font-family: 'Press Start 2P', 'Segoe UI', sans-serif;
     overflow: hidden;
     touch-action: none;
@@ -20,29 +20,12 @@ body {
 }
 
 #game-container {
-    position: relative;
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
-    height: 100vh;
+    height: 100%;
     height: 100dvh;
-    max-width: 960px;
-    max-height: 540px;
-}
-
-@media (min-aspect-ratio: 16/9) {
-    #game-container {
-        width: auto;
-        height: 100vh;
-        height: 100dvh;
-        aspect-ratio: 16/9;
-    }
-}
-
-@media (max-aspect-ratio: 16/9) {
-    #game-container {
-        width: 100%;
-        height: auto;
-        aspect-ratio: 16/9;
-    }
 }
 
 #gameCanvas {
@@ -50,9 +33,6 @@ body {
     height: 100%;
     display: block;
     border-radius: 0;
-    box-shadow:
-        0 0 0 3px #FFD700,
-        0 0 20px rgba(255, 215, 0, 0.3);
     image-rendering: pixelated;
 }
 
