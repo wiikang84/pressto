@@ -1174,10 +1174,10 @@ function drawBackground() {
     }
 
     // 크레딧 표시
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
-    ctx.font = '10px "Press Start 2P", sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText('made by 빛나아빠', canvas.width - 10, canvas.height - 10);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.font = '12px "Press Start 2P", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('made by 빛나아빠', canvas.width / 2, canvas.height - 15);
     ctx.textAlign = 'left';
 }
 
