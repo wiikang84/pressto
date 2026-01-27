@@ -648,21 +648,26 @@ body {
         margin-bottom: 10px;
     }
 
+    .difficulty-buttons {
+        gap: 10px;
+    }
+
     .diff-btn {
-        padding: 10px 15px;
-        min-width: 90px;
+        padding: 12px 18px;
+        min-width: 100px;
+        min-height: 80px;
     }
 
     .diff-icon {
-        font-size: 24px;
+        font-size: 26px;
     }
 
     .diff-name {
-        font-size: 10px;
+        font-size: 11px;
     }
 
     .diff-desc {
-        font-size: 7px;
+        font-size: 8px;
     }
 
     #score-display {

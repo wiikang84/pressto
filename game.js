@@ -1821,9 +1821,13 @@ canvas.addEventListener('touchend', (e) => {
     handleRelease();
 });
 
-// 시작 화면 클릭
-startScreen.addEventListener('click', handlePress);
+// 시작 화면 클릭 (버튼 영역 제외)
+startScreen.addEventListener('click', (e) => {
+    if (e.target.closest('.diff-btn') || e.target.closest('.character-select-btn') || e.target.closest('button')) return;
+    handlePress();
+});
 startScreen.addEventListener('touchstart', (e) => {
+    if (e.target.closest('.diff-btn') || e.target.closest('.character-select-btn') || e.target.closest('button')) return;
     e.preventDefault();
     handlePress();
 });
@@ -1893,6 +1897,12 @@ pauseHomeBtn.addEventListener('click', (e) => {
 // 난이도 버튼 이벤트
 document.querySelectorAll('.diff-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const difficulty = btn.dataset.difficulty;
+        startGame(difficulty);
+    });
+    btn.addEventListener('touchend', (e) => {
+        e.preventDefault();
         e.stopPropagation();
         const difficulty = btn.dataset.difficulty;
         startGame(difficulty);
