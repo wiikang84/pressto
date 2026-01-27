@@ -76,7 +76,7 @@ if (fullscreenBtn) {
 const characters = {
     ppukku: {
         id: 'ppukku',
-        name: '뿌꾸',
+        name: '빛나',
         desc: '귀여운 기본 새',
         price: 0,
         unlocked: true,
@@ -84,7 +84,7 @@ const characters = {
     },
     ppuang: {
         id: 'ppuang',
-        name: '뿌앙',
+        name: '빈나',
         desc: '화난 새',
         price: 0,
         unlocked: true,
@@ -92,7 +92,7 @@ const characters = {
     },
     ppuing: {
         id: 'ppuing',
-        name: '뿌잉',
+        name: '빙나',
         desc: '애교쟁이',
         price: 0,
         unlocked: true,
@@ -100,7 +100,7 @@ const characters = {
     },
     ppuul: {
         id: 'ppuul',
-        name: '뿌울',
+        name: '빗나',
         desc: '쿨한 새',
         price: 0,
         unlocked: true,
@@ -108,7 +108,7 @@ const characters = {
     },
     ppuseul: {
         id: 'ppuseul',
-        name: '뿌슬',
+        name: '빔나',
         desc: '슬픈 새',
         price: 0,
         unlocked: true,
@@ -116,7 +116,7 @@ const characters = {
     },
     ppuban: {
         id: 'ppuban',
-        name: '뿌반',
+        name: '빈na',
         desc: '신난 새',
         price: 0,
         unlocked: true,
