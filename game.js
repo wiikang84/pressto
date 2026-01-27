@@ -546,20 +546,37 @@ const BIRD_ANIMATION_SPEED = 8; // 프레임당 틱
 
 // Web Audio API 사운드 시스템
 let audioContext = null;
+let audioInitialized = false;
 
 function getAudioContext() {
     if (!audioContext) {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if (audioContext.state === 'suspended') {
-        audioContext.resume();
+        try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch(e) {
+            return null;
+        }
     }
     return audioContext;
 }
 
+// 사용자 인터랙션 시 오디오 활성화
+function initAudio() {
+    if (audioInitialized) return;
+    const ctx = getAudioContext();
+    if (ctx && ctx.state === 'suspended') {
+        ctx.resume();
+    }
+    audioInitialized = true;
+}
+
+// 첫 터치/클릭 시 오디오 초기화
+document.addEventListener('touchstart', initAudio, { once: true });
+document.addEventListener('click', initAudio, { once: true });
+
 // 바람 소리 생성 (장애물 통과 시)
 function createWindSound(duration = 0.15, volume = 0.2) {
     const ctx = getAudioContext();
+    if (!ctx) return;
     const bufferSize = ctx.sampleRate * duration;
     const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = buffer.getChannelData(0);
@@ -590,6 +607,7 @@ function createWindSound(duration = 0.15, volume = 0.2) {
 // 레벨업 바람 + 차임 소리
 function createLevelUpSound() {
     const ctx = getAudioContext();
+    if (!ctx) return;
 
     // 상승하는 바람 소리
     const bufferSize = ctx.sampleRate * 0.5;
@@ -642,6 +660,7 @@ function createLevelUpSound() {
 // 부드러운 점프 소리
 function createJumpSound() {
     const ctx = getAudioContext();
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const gainNode = ctx.createGain();
 
@@ -661,6 +680,7 @@ function createJumpSound() {
 // 충돌 소리 (짧은 충격음)
 function createHitSound() {
     const ctx = getAudioContext();
+    if (!ctx) return;
 
     // 노이즈 버스트
     const bufferSize = ctx.sampleRate * 0.1;
@@ -705,6 +725,7 @@ function createHitSound() {
 // 토큰 획득 소리 (반짝이는 소리)
 function createTokenSound() {
     const ctx = getAudioContext();
+    if (!ctx) return;
     const frequencies = [880, 1108.73, 1318.51]; // A5, C#6, E6
 
     frequencies.forEach((freq, index) => {
