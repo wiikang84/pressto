@@ -5,6 +5,7 @@ const ctx = canvas.getContext('2d');
 // UI Elements
 const scoreDisplay = document.getElementById('score-display');
 const tokenDisplay = document.getElementById('token-display');
+const welcomeScreen = document.getElementById('welcome-screen');
 const startScreen = document.getElementById('start-screen');
 const gameoverScreen = document.getElementById('gameover-screen');
 const finalScoreEl = document.getElementById('final-score');
@@ -36,56 +37,40 @@ const fullscreenSupported = document.documentElement.requestFullscreen || docume
 const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 const isFullscreen = () => document.fullscreenElement || document.webkitFullscreenElement;
 
-// 전체화면 버튼 초기화
-if (fullscreenBtn) {
-    if (isStandalone || isFullscreen()) {
-        fullscreenBtn.classList.add('hidden');
-    } else if (isIOS) {
-        fullscreenBtn.textContent = '📱 홈화면에 추가하면 전체화면!';
-        fullscreenBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            alert('전체화면으로 플레이하려면:\n\n1. Safari 하단의 공유 버튼(□↑) 터치\n2. "홈 화면에 추가" 선택\n3. 추가된 아이콘으로 실행!');
-        });
-        fullscreenBtn.addEventListener('touchend', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            alert('전체화면으로 플레이하려면:\n\n1. Safari 하단의 공유 버튼(□↑) 터치\n2. "홈 화면에 추가" 선택\n3. 추가된 아이콘으로 실행!');
-        });
-    } else {
-        fullscreenBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            requestFullscreen();
-            setTimeout(() => {
-                if (isFullscreen()) {
-                    fullscreenBtn.classList.add('hidden');
-                }
-            }, 500);
-        });
-        fullscreenBtn.addEventListener('touchend', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            requestFullscreen();
-            setTimeout(() => {
-                if (isFullscreen()) {
-                    fullscreenBtn.classList.add('hidden');
-                }
-            }, 500);
-        });
-    }
+// 웰컴 화면에서 게임 메뉴로 이동
+function goToGameMenu() {
+    if (welcomeScreen) welcomeScreen.classList.add('hidden');
+    if (startScreen) startScreen.classList.remove('hidden');
+    initAudio(); // 오디오 초기화
 }
 
-// 전체화면 변경 감지
-document.addEventListener('fullscreenchange', () => {
-    if (fullscreenBtn) {
-        if (isFullscreen()) {
-            fullscreenBtn.classList.add('hidden');
-        } else {
-            fullscreenBtn.classList.remove('hidden');
-        }
+// 전체화면 버튼 초기화
+if (fullscreenBtn) {
+    // 이미 PWA/전체화면이면 바로 게임 메뉴로
+    if (isStandalone || isFullscreen()) {
+        goToGameMenu();
+    } else if (isIOS) {
+        fullscreenBtn.textContent = '🎮 게임 시작';
+        const iosHandler = (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            // iOS는 전체화면 불가, 그냥 게임 메뉴로 이동
+            goToGameMenu();
+        };
+        fullscreenBtn.addEventListener('click', iosHandler);
+        fullscreenBtn.addEventListener('touchend', iosHandler);
+    } else {
+        const androidHandler = (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            requestFullscreen();
+            // 전체화면 전환 후 게임 메뉴로 이동
+            setTimeout(goToGameMenu, 300);
+        };
+        fullscreenBtn.addEventListener('click', androidHandler);
+        fullscreenBtn.addEventListener('touchend', androidHandler);
     }
-});
+}
 
 // 캐릭터 정의
 const characters = {
@@ -2089,16 +2074,7 @@ canvas.addEventListener('touchend', (e) => {
     handleRelease();
 });
 
-// 시작 화면 클릭 (버튼 영역 제외)
-startScreen.addEventListener('click', (e) => {
-    if (e.target.closest('.diff-btn') || e.target.closest('.character-select-btn') || e.target.closest('button')) return;
-    handlePress();
-});
-startScreen.addEventListener('touchstart', (e) => {
-    if (e.target.closest('.diff-btn') || e.target.closest('.character-select-btn') || e.target.closest('button')) return;
-    e.preventDefault();
-    handlePress();
-});
+// 시작 화면에서는 난이도 버튼으로만 게임 시작 (다른 영역 터치 무시)
 
 // 키보드 입력
 document.addEventListener('keydown', (e) => {
