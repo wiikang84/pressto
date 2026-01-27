@@ -23,6 +23,10 @@
                 <div class="token-info">
                     <span id="start-tokens">0</span>
                 </div>
+                <button id="character-btn" class="character-select-btn">
+                    <canvas id="character-preview" width="60" height="60"></canvas>
+                    <span>캐릭터 변경</span>
+                </button>
                 <div class="how-to-play">
                     <p>🎮 게임 방법</p>
                     <p class="instruction">누르고 있으면 ⬆️ 상승</p>
@@ -46,6 +50,13 @@
                         <span class="diff-desc">도전!</span>
                     </button>
                 </div>
+            </div>
+            <div id="character-screen" class="screen hidden">
+                <h2>캐릭터 선택</h2>
+                <div class="character-grid" id="character-grid">
+                    <!-- 캐릭터들이 JS로 생성됨 -->
+                </div>
+                <button id="character-back-btn" class="pause-menu-btn">← 돌아가기</button>
             </div>
             <div id="pause-screen" class="screen hidden">
                 <h2>일시정지</h2>

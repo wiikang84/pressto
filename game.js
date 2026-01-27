@@ -18,6 +18,460 @@ const pauseHomeBtn = document.getElementById('pause-home-btn');
 const reviveBtn = document.getElementById('revive-btn');
 const startTokensEl = document.getElementById('start-tokens');
 const gameoverTokensEl = document.getElementById('gameover-tokens');
+const characterBtn = document.getElementById('character-btn');
+const characterScreen = document.getElementById('character-screen');
+const characterGrid = document.getElementById('character-grid');
+const characterBackBtn = document.getElementById('character-back-btn');
+const characterPreview = document.getElementById('character-preview');
+const characterPreviewCtx = characterPreview ? characterPreview.getContext('2d') : null;
+
+// 캐릭터 정의
+const characters = {
+    ppukku: {
+        id: 'ppukku',
+        name: '뿌꾸',
+        desc: '귀여운 기본 새',
+        price: 0,
+        unlocked: true,
+        colors: { body: '#FFD93D', bodyStroke: '#F4A900', wing: '#FF9500', beak: '#FF6B35', eye: '#000' }
+    },
+    ppuang: {
+        id: 'ppuang',
+        name: '뿌앙',
+        desc: '화난 새',
+        price: 0,
+        unlocked: true,
+        colors: { body: '#FF6B6B', bodyStroke: '#CC5555', wing: '#FF4444', beak: '#FF8800', eye: '#000' }
+    },
+    ppuing: {
+        id: 'ppuing',
+        name: '뿌잉',
+        desc: '애교쟁이',
+        price: 0,
+        unlocked: true,
+        colors: { body: '#FFB6C1', bodyStroke: '#FF69B4', wing: '#FF1493', beak: '#FF6B35', eye: '#000' }
+    },
+    ppuul: {
+        id: 'ppuul',
+        name: '뿌울',
+        desc: '쿨한 새',
+        price: 50,
+        unlocked: false,
+        colors: { body: '#4FC3F7', bodyStroke: '#0288D1', wing: '#03A9F4', beak: '#FF9800', eye: '#000' }
+    },
+    ppuseul: {
+        id: 'ppuseul',
+        name: '뿌슬',
+        desc: '슬픈 새',
+        price: 50,
+        unlocked: false,
+        colors: { body: '#B39DDB', bodyStroke: '#7E57C2', wing: '#9575CD', beak: '#FFAB91', eye: '#000' }
+    },
+    ppuban: {
+        id: 'ppuban',
+        name: '뿌반',
+        desc: '신난 새',
+        price: 100,
+        unlocked: false,
+        colors: { body: '#81C784', bodyStroke: '#4CAF50', wing: '#66BB6A', beak: '#FFCC02', eye: '#000' }
+    }
+};
+
+// 현재 선택된 캐릭터
+let currentCharacter = localStorage.getItem('pressto_character') || 'ppukku';
+let unlockedCharacters = JSON.parse(localStorage.getItem('pressto_unlocked_chars')) || ['ppukku', 'ppuang', 'ppuing'];
+
+// 캐릭터 잠금 해제
+function unlockCharacter(charId) {
+    const char = characters[charId];
+    if (!char || unlockedCharacters.includes(charId)) return false;
+    if (tokens < char.price) return false;
+
+    tokens -= char.price;
+    saveTokens();
+    unlockedCharacters.push(charId);
+    localStorage.setItem('pressto_unlocked_chars', JSON.stringify(unlockedCharacters));
+    return true;
+}
+
+// 캐릭터 선택
+function selectCharacter(charId) {
+    if (!unlockedCharacters.includes(charId)) return false;
+    currentCharacter = charId;
+    localStorage.setItem('pressto_character', charId);
+    updateCharacterPreview();
+    return true;
+}
+
+// 캐릭터 그리기 함수 - 새 형태 (머리+몸통+꼬리)
+function drawCharacter(ctx, x, y, size, charId, isPressed = false, isAngry = false) {
+    const char = characters[charId] || characters.ppukku;
+    const colors = char.colors;
+
+    ctx.save();
+    ctx.translate(x, y);
+
+    // === 꼬리 (뒤에 먼저 그리기) ===
+    ctx.fillStyle = colors.wing;
+    ctx.beginPath();
+    ctx.moveTo(-size * 0.8, -size * 0.1);
+    ctx.lineTo(-size * 1.3, -size * 0.4);
+    ctx.lineTo(-size * 1.4, -size * 0.1);
+    ctx.lineTo(-size * 1.3, size * 0.2);
+    ctx.lineTo(-size * 0.8, size * 0.1);
+    ctx.closePath();
+    ctx.fill();
+
+    // === 몸통 (둥근 새 형태) ===
+    ctx.fillStyle = colors.body;
+    ctx.beginPath();
+    // 머리 + 몸통 연결된 새 형태
+    ctx.ellipse(0, 0, size * 0.9, size * 0.75, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = colors.bodyStroke;
+    ctx.lineWidth = size * 0.06;
+    ctx.stroke();
+
+    // === 머리 볏/깃털 (캐릭터별 다름) ===
+    ctx.fillStyle = colors.wing;
+    if (charId === 'ppuang') {
+        // 뿔처럼 뾰족한 깃털
+        ctx.beginPath();
+        ctx.moveTo(-size * 0.2, -size * 0.7);
+        ctx.lineTo(size * 0.1, -size * 1.1);
+        ctx.lineTo(size * 0.3, -size * 0.65);
+        ctx.closePath();
+        ctx.fill();
+    } else if (charId === 'ppuing') {
+        // 리본 모양
+        ctx.fillStyle = '#FF69B4';
+        ctx.beginPath();
+        ctx.arc(-size * 0.1, -size * 0.85, size * 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(size * 0.25, -size * 0.85, size * 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#FF1493';
+        ctx.beginPath();
+        ctx.arc(size * 0.08, -size * 0.8, size * 0.1, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (charId === 'ppuban') {
+        // 왕관 모양
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath();
+        ctx.moveTo(-size * 0.3, -size * 0.65);
+        ctx.lineTo(-size * 0.2, -size * 1.0);
+        ctx.lineTo(size * 0.0, -size * 0.75);
+        ctx.lineTo(size * 0.2, -size * 1.0);
+        ctx.lineTo(size * 0.3, -size * 0.65);
+        ctx.closePath();
+        ctx.fill();
+    } else {
+        // 기본 깃털
+        ctx.beginPath();
+        ctx.ellipse(size * 0.05, -size * 0.85, size * 0.12, size * 0.25, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // === 날개 ===
+    const wingY = isPressed ? -size * 0.3 : size * 0.1;
+    const wingAngle = isPressed ? -0.5 : 0.3;
+    ctx.fillStyle = colors.wing;
+    ctx.beginPath();
+    ctx.save();
+    ctx.translate(-size * 0.5, wingY);
+    ctx.rotate(wingAngle);
+    ctx.ellipse(0, 0, size * 0.35, size * 0.55, 0, 0, Math.PI * 2);
+    ctx.restore();
+    ctx.fill();
+
+    // === 배 (밝은색) ===
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.beginPath();
+    ctx.ellipse(size * 0.1, size * 0.15, size * 0.5, size * 0.45, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // === 캐릭터별 얼굴 표정 ===
+    switch(charId) {
+        case 'ppuang': // 화난 새
+            // 찡그린 눈썹
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = size * 0.1;
+            ctx.beginPath();
+            ctx.moveTo(size * 0.1, -size * 0.45);
+            ctx.lineTo(size * 0.55, -size * 0.25);
+            ctx.stroke();
+            // 화난 눈
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.ellipse(size * 0.35, -size * 0.15, size * 0.28, size * 0.22, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = size * 0.04;
+            ctx.stroke();
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(size * 0.4, -size * 0.1, size * 0.12, 0, Math.PI * 2);
+            ctx.fill();
+            // 부리
+            ctx.fillStyle = colors.beak;
+            ctx.beginPath();
+            ctx.moveTo(size * 0.65, -size * 0.05);
+            ctx.lineTo(size * 1.1, size * 0.1);
+            ctx.lineTo(size * 0.65, size * 0.2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#CC5500';
+            ctx.lineWidth = size * 0.03;
+            ctx.stroke();
+            break;
+
+        case 'ppuing': // 애교 새
+            // 볼터치
+            ctx.fillStyle = 'rgba(255, 100, 150, 0.5)';
+            ctx.beginPath();
+            ctx.ellipse(size * 0.15, size * 0.2, size * 0.2, size * 0.12, 0, 0, Math.PI * 2);
+            ctx.fill();
+            // 윙크 눈
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.ellipse(size * 0.35, -size * 0.15, size * 0.25, size * 0.2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = size * 0.03;
+            ctx.stroke();
+            // 하트 눈
+            ctx.fillStyle = '#FF69B4';
+            drawHeart(ctx, size * 0.35, -size * 0.12, size * 0.12);
+            // 부리 (웃는)
+            ctx.fillStyle = colors.beak;
+            ctx.beginPath();
+            ctx.moveTo(size * 0.6, size * 0.0);
+            ctx.quadraticCurveTo(size * 0.95, size * 0.1, size * 0.6, size * 0.25);
+            ctx.closePath();
+            ctx.fill();
+            break;
+
+        case 'ppuul': // 쿨한 새
+            // 선글라스
+            ctx.fillStyle = '#111';
+            ctx.beginPath();
+            ctx.roundRect(size * 0.1, -size * 0.35, size * 0.5, size * 0.28, size * 0.05);
+            ctx.fill();
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = size * 0.04;
+            ctx.stroke();
+            // 선글라스 다리
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = size * 0.05;
+            ctx.beginPath();
+            ctx.moveTo(size * 0.1, -size * 0.2);
+            ctx.lineTo(-size * 0.3, -size * 0.25);
+            ctx.stroke();
+            // 반사광
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.beginPath();
+            ctx.ellipse(size * 0.25, -size * 0.28, size * 0.08, size * 0.05, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+            // 부리
+            ctx.fillStyle = colors.beak;
+            ctx.beginPath();
+            ctx.moveTo(size * 0.65, size * 0.05);
+            ctx.lineTo(size * 1.0, size * 0.12);
+            ctx.lineTo(size * 0.65, size * 0.2);
+            ctx.closePath();
+            ctx.fill();
+            break;
+
+        case 'ppuseul': // 슬픈 새
+            // 축 처진 눈썹
+            ctx.strokeStyle = colors.bodyStroke;
+            ctx.lineWidth = size * 0.08;
+            ctx.beginPath();
+            ctx.moveTo(size * 0.1, -size * 0.45);
+            ctx.lineTo(size * 0.5, -size * 0.35);
+            ctx.stroke();
+            // 슬픈 눈
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.ellipse(size * 0.35, -size * 0.1, size * 0.22, size * 0.18, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(size * 0.38, -size * 0.05, size * 0.1, 0, Math.PI * 2);
+            ctx.fill();
+            // 눈물
+            ctx.fillStyle = '#87CEEB';
+            ctx.beginPath();
+            ctx.moveTo(size * 0.5, size * 0.0);
+            ctx.quadraticCurveTo(size * 0.55, size * 0.15, size * 0.48, size * 0.25);
+            ctx.quadraticCurveTo(size * 0.42, size * 0.15, size * 0.5, size * 0.0);
+            ctx.fill();
+            // 부리 (아래로)
+            ctx.fillStyle = colors.beak;
+            ctx.beginPath();
+            ctx.moveTo(size * 0.6, size * 0.1);
+            ctx.lineTo(size * 0.9, size * 0.2);
+            ctx.lineTo(size * 0.6, size * 0.25);
+            ctx.closePath();
+            ctx.fill();
+            break;
+
+        case 'ppuban': // 신난 새
+            // 별 눈
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.ellipse(size * 0.35, -size * 0.12, size * 0.28, size * 0.24, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = size * 0.03;
+            ctx.stroke();
+            ctx.fillStyle = '#FFD700';
+            drawStar(ctx, size * 0.38, -size * 0.08, size * 0.14, 5);
+            // 볼터치
+            ctx.fillStyle = 'rgba(255, 150, 150, 0.5)';
+            ctx.beginPath();
+            ctx.ellipse(size * 0.15, size * 0.2, size * 0.18, size * 0.1, 0, 0, Math.PI * 2);
+            ctx.fill();
+            // 활짝 웃는 부리
+            ctx.fillStyle = colors.beak;
+            ctx.beginPath();
+            ctx.moveTo(size * 0.55, size * 0.0);
+            ctx.quadraticCurveTo(size * 1.05, size * 0.15, size * 0.55, size * 0.35);
+            ctx.closePath();
+            ctx.fill();
+            // 입안
+            ctx.fillStyle = '#8B0000';
+            ctx.beginPath();
+            ctx.ellipse(size * 0.7, size * 0.18, size * 0.12, size * 0.08, 0, 0, Math.PI * 2);
+            ctx.fill();
+            break;
+
+        default: // ppukku - 기본 귀여운 새
+            // 큰 눈
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.ellipse(size * 0.35, -size * 0.12, size * 0.28, size * 0.24, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = size * 0.03;
+            ctx.stroke();
+            // 눈동자
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(size * 0.42, -size * 0.08, size * 0.12, 0, Math.PI * 2);
+            ctx.fill();
+            // 눈 하이라이트
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(size * 0.47, -size * 0.15, size * 0.05, 0, Math.PI * 2);
+            ctx.fill();
+            // 볼터치
+            ctx.fillStyle = 'rgba(255, 150, 150, 0.4)';
+            ctx.beginPath();
+            ctx.ellipse(size * 0.12, size * 0.18, size * 0.18, size * 0.1, 0, 0, Math.PI * 2);
+            ctx.fill();
+            // 부리
+            ctx.fillStyle = colors.beak;
+            ctx.beginPath();
+            ctx.moveTo(size * 0.65, size * 0.0);
+            ctx.lineTo(size * 1.05, size * 0.1);
+            ctx.lineTo(size * 0.65, size * 0.22);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#CC5500';
+            ctx.lineWidth = size * 0.02;
+            ctx.stroke();
+            break;
+    }
+
+    ctx.restore();
+}
+
+// 하트 그리기 헬퍼
+function drawHeart(ctx, x, y, size) {
+    ctx.beginPath();
+    ctx.moveTo(x, y + size * 0.3);
+    ctx.bezierCurveTo(x - size, y - size * 0.5, x - size * 0.5, y - size, x, y - size * 0.5);
+    ctx.bezierCurveTo(x + size * 0.5, y - size, x + size, y - size * 0.5, x, y + size * 0.3);
+    ctx.fill();
+}
+
+// 별 그리기 헬퍼
+function drawStar(ctx, cx, cy, radius, points) {
+    ctx.beginPath();
+    for (let i = 0; i < points * 2; i++) {
+        const r = i % 2 === 0 ? radius : radius * 0.5;
+        const angle = (i * Math.PI / points) - Math.PI / 2;
+        const x = cx + Math.cos(angle) * r;
+        const y = cy + Math.sin(angle) * r;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+}
+
+// 캐릭터 미리보기 업데이트
+function updateCharacterPreview() {
+    if (!characterPreviewCtx) return;
+    characterPreviewCtx.clearRect(0, 0, 60, 60);
+    drawCharacter(characterPreviewCtx, 30, 30, 22, currentCharacter);
+}
+
+// 캐릭터 선택 UI 생성
+function createCharacterGrid() {
+    if (!characterGrid) return;
+    characterGrid.innerHTML = '';
+
+    Object.values(characters).forEach(char => {
+        const card = document.createElement('div');
+        card.className = 'character-card';
+        if (currentCharacter === char.id) card.classList.add('selected');
+        if (!unlockedCharacters.includes(char.id)) card.classList.add('locked');
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 70;
+        canvas.height = 70;
+        const cardCtx = canvas.getContext('2d');
+        drawCharacter(cardCtx, 35, 35, 25, char.id);
+
+        const name = document.createElement('span');
+        name.className = 'character-name';
+        name.textContent = char.name;
+
+        const price = document.createElement('span');
+        price.className = 'character-price';
+        if (unlockedCharacters.includes(char.id)) {
+            price.textContent = currentCharacter === char.id ? '✓ 선택됨' : '보유중';
+        } else {
+            price.textContent = `🪙 ${char.price}`;
+        }
+
+        card.appendChild(canvas);
+        card.appendChild(name);
+        card.appendChild(price);
+
+        card.addEventListener('click', () => {
+            if (unlockedCharacters.includes(char.id)) {
+                selectCharacter(char.id);
+                createCharacterGrid();
+            } else if (tokens >= char.price) {
+                if (confirm(`${char.name}을(를) ${char.price} 토큰으로 구매할까요?`)) {
+                    if (unlockCharacter(char.id)) {
+                        selectCharacter(char.id);
+                        createCharacterGrid();
+                        updateTokenDisplays();
+                    }
+                }
+            } else {
+                alert('토큰이 부족합니다!');
+            }
+        });
+
+        characterGrid.appendChild(card);
+    });
+}
 
 // 난이도 설정
 const difficultySettings = {
@@ -498,6 +952,48 @@ function drawBackground() {
         ctx.textAlign = 'center';
         ctx.fillText(`${currentCycle}`, canvas.width / 2, canvas.height / 2 + 20);
     }
+
+    // 50점 이상 보스 스테이지 효과 (Easy/Middle)
+    if (score >= 50 && (currentDifficulty === 'easy' || currentDifficulty === 'middle')) {
+        // 화면 가장자리 글로우 효과
+        const glowIntensity = 0.15 + Math.sin(Date.now() * 0.003) * 0.05;
+        const bossGradient = ctx.createRadialGradient(
+            canvas.width / 2, canvas.height / 2, canvas.height * 0.3,
+            canvas.width / 2, canvas.height / 2, canvas.height
+        );
+        if (currentDifficulty === 'easy') {
+            bossGradient.addColorStop(0, 'rgba(255, 215, 0, 0)');
+            bossGradient.addColorStop(1, `rgba(255, 150, 0, ${glowIntensity})`);
+        } else {
+            bossGradient.addColorStop(0, 'rgba(255, 50, 50, 0)');
+            bossGradient.addColorStop(1, `rgba(255, 0, 100, ${glowIntensity})`);
+        }
+        ctx.fillStyle = bossGradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 번개/스파크 효과
+        if (Math.random() < 0.02) {
+            ctx.strokeStyle = currentDifficulty === 'easy' ?
+                'rgba(255, 215, 0, 0.3)' : 'rgba(255, 100, 150, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            const startX = Math.random() * canvas.width;
+            ctx.moveTo(startX, 0);
+            let y = 0;
+            while (y < canvas.height * 0.3) {
+                y += 20;
+                ctx.lineTo(startX + (Math.random() - 0.5) * 50, y);
+            }
+            ctx.stroke();
+        }
+    }
+
+    // 크레딧 표시
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.font = '10px "Press Start 2P", sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('madeby 빛나아빠', canvas.width - 10, canvas.height - 10);
+    ctx.textAlign = 'left';
 }
 
 // 패럴랙스 구름 업데이트
@@ -527,7 +1023,7 @@ function drawCloud(x, y, size) {
     ctx.fill();
 }
 
-// 플레이어 그리기 (애니메이션 스프라이트)
+// 플레이어 그리기 (캐릭터 시스템)
 function drawPlayer() {
     ctx.save();
     ctx.translate(player.x, player.y);
@@ -536,7 +1032,7 @@ function drawPlayer() {
     const rotation = Math.min(Math.max(player.velocity * 3, -30), 30) * Math.PI / 180;
     ctx.rotate(rotation);
 
-    // 애니메이션 업데이트
+    // 애니메이션 업데이트 (날개 펄럭임)
     if (gameState === GameState.PLAYING) {
         birdAnimationTimer++;
         if (birdAnimationTimer >= BIRD_ANIMATION_SPEED) {
@@ -546,7 +1042,6 @@ function drawPlayer() {
     }
 
     // 눌렀을 때/부활 무적일 때 효과
-    const scale = isPressed ? 1.15 : 1;
     const isInvincible = reviveInvincibleTime > Date.now() || practiceMode;
 
     if (isInvincible && gameState === GameState.PLAYING) {
@@ -555,68 +1050,10 @@ function drawPlayer() {
         ctx.shadowBlur = 20 + Math.sin(Date.now() * 0.01) * 10;
     }
 
-    if (birdSpritesLoaded >= BIRD_FRAME_COUNT && birdSprites[currentBirdFrame]) {
-        // 스프라이트 애니메이션으로 그리기
-        const sprite = birdSprites[currentBirdFrame];
-        const imgWidth = player.width * scale;
-        const imgHeight = player.height * scale;
-
-        ctx.drawImage(
-            sprite,
-            -imgWidth / 2,
-            -imgHeight / 2,
-            imgWidth,
-            imgHeight
-        );
-    } else {
-        // 스프라이트 로드 전 대체 그리기 (귀여운 새 모양)
-        const size = player.width / 2;
-
-        // 몸통
-        ctx.fillStyle = '#FFD93D';
-        ctx.beginPath();
-        ctx.ellipse(0, 0, size, size * 0.8, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // 몸통 테두리
-        ctx.strokeStyle = '#F4A900';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
-        // 날개
-        ctx.fillStyle = '#FF9500';
-        const wingY = isPressed ? -5 : 5;
-        ctx.beginPath();
-        ctx.ellipse(-size * 0.3, wingY, size * 0.4, size * 0.25, -0.3, 0, Math.PI * 2);
-        ctx.fill();
-
-        // 눈 (흰자)
-        ctx.fillStyle = 'white';
-        ctx.beginPath();
-        ctx.arc(size * 0.3, -size * 0.2, size * 0.35, 0, Math.PI * 2);
-        ctx.fill();
-
-        // 눈 (눈동자)
-        ctx.fillStyle = 'black';
-        ctx.beginPath();
-        ctx.arc(size * 0.4, -size * 0.15, size * 0.18, 0, Math.PI * 2);
-        ctx.fill();
-
-        // 눈 하이라이트
-        ctx.fillStyle = 'white';
-        ctx.beginPath();
-        ctx.arc(size * 0.45, -size * 0.25, size * 0.08, 0, Math.PI * 2);
-        ctx.fill();
-
-        // 부리
-        ctx.fillStyle = '#FF6B35';
-        ctx.beginPath();
-        ctx.moveTo(size * 0.7, 0);
-        ctx.lineTo(size * 1.1, size * 0.1);
-        ctx.lineTo(size * 0.7, size * 0.25);
-        ctx.closePath();
-        ctx.fill();
-    }
+    // 선택된 캐릭터로 그리기
+    const size = player.width / 2;
+    const wingUp = currentBirdFrame === 0 || isPressed;
+    drawCharacter(ctx, 0, 0, size, currentCharacter, wingUp);
 
     ctx.shadowBlur = 0;
     ctx.restore();
@@ -1470,9 +1907,30 @@ if (reviveBtn) {
     });
 }
 
+// 캐릭터 선택 버튼 이벤트
+if (characterBtn) {
+    characterBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        startScreen.classList.add('hidden');
+        characterScreen.classList.remove('hidden');
+        createCharacterGrid();
+    });
+}
+
+// 캐릭터 선택 돌아가기 버튼
+if (characterBackBtn) {
+    characterBackBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        characterScreen.classList.add('hidden');
+        startScreen.classList.remove('hidden');
+    });
+}
+
 // 초기화
 resetPlayer();
 initClouds();
 updateTokenDisplays();
+updateCharacterPreview();
+createCharacterGrid();
 bestScoreEl.textContent = bestScore;
 requestAnimationFrame(gameLoop);
