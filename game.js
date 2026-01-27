@@ -544,24 +544,209 @@ let currentBirdFrame = 0;
 let birdAnimationTimer = 0;
 const BIRD_ANIMATION_SPEED = 8; // 프레임당 틱
 
-// 사운드 시스템
-const sounds = {
-    jump: new Audio('assets/sounds/jump.mp3'),
-    score: new Audio('assets/sounds/score.mp3'),
-    hit: new Audio('assets/sounds/hit.wav'),
-    levelup: new Audio('assets/sounds/levelup.wav'),
-    token: new Audio('assets/sounds/token.wav')
-};
+// Web Audio API 사운드 시스템
+let audioContext = null;
 
-// 사운드 볼륨 설정
-Object.values(sounds).forEach(sound => {
-    sound.volume = 0.3;
-});
+function getAudioContext() {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+    return audioContext;
+}
+
+// 바람 소리 생성 (장애물 통과 시)
+function createWindSound(duration = 0.15, volume = 0.2) {
+    const ctx = getAudioContext();
+    const bufferSize = ctx.sampleRate * duration;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) {
+        const t = i / bufferSize;
+        const envelope = Math.sin(t * Math.PI); // 부드러운 페이드 인/아웃
+        data[i] = (Math.random() * 2 - 1) * envelope * 0.3;
+    }
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+
+    // 로우패스 필터로 부드러운 바람 소리
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 800;
+
+    const gainNode = ctx.createGain();
+    gainNode.gain.value = volume;
+
+    source.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    source.start();
+}
+
+// 레벨업 바람 + 차임 소리
+function createLevelUpSound() {
+    const ctx = getAudioContext();
+
+    // 상승하는 바람 소리
+    const bufferSize = ctx.sampleRate * 0.5;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) {
+        const t = i / bufferSize;
+        const envelope = Math.sin(t * Math.PI) * (1 - t * 0.5);
+        data[i] = (Math.random() * 2 - 1) * envelope * 0.2;
+    }
+
+    const noiseSource = ctx.createBufferSource();
+    noiseSource.buffer = buffer;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(400, ctx.currentTime);
+    filter.frequency.linearRampToValueAtTime(1200, ctx.currentTime + 0.5);
+    filter.Q.value = 1;
+
+    const gainNode = ctx.createGain();
+    gainNode.gain.value = 0.25;
+
+    noiseSource.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    noiseSource.start();
+
+    // 차임 소리 추가
+    const frequencies = [523.25, 659.25, 783.99]; // C5, E5, G5 코드
+    frequencies.forEach((freq, index) => {
+        const osc = ctx.createOscillator();
+        const oscGain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+
+        oscGain.gain.setValueAtTime(0, ctx.currentTime + index * 0.08);
+        oscGain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + index * 0.08 + 0.05);
+        oscGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + index * 0.08 + 0.4);
+
+        osc.connect(oscGain);
+        oscGain.connect(ctx.destination);
+        osc.start(ctx.currentTime + index * 0.08);
+        osc.stop(ctx.currentTime + index * 0.08 + 0.5);
+    });
+}
+
+// 부드러운 점프 소리
+function createJumpSound() {
+    const ctx = getAudioContext();
+    const osc = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(280, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(450, ctx.currentTime + 0.1);
+
+    gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+
+    osc.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+}
+
+// 충돌 소리 (짧은 충격음)
+function createHitSound() {
+    const ctx = getAudioContext();
+
+    // 노이즈 버스트
+    const bufferSize = ctx.sampleRate * 0.1;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) {
+        const t = i / bufferSize;
+        const envelope = Math.exp(-t * 15);
+        data[i] = (Math.random() * 2 - 1) * envelope;
+    }
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 500;
+
+    const gainNode = ctx.createGain();
+    gainNode.gain.value = 0.3;
+
+    source.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    source.start();
+
+    // 저음 펑 소리 추가
+    const osc = ctx.createOscillator();
+    const oscGain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.1);
+    oscGain.gain.setValueAtTime(0.3, ctx.currentTime);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+    osc.connect(oscGain);
+    oscGain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+}
+
+// 토큰 획득 소리 (반짝이는 소리)
+function createTokenSound() {
+    const ctx = getAudioContext();
+    const frequencies = [880, 1108.73, 1318.51]; // A5, C#6, E6
+
+    frequencies.forEach((freq, index) => {
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+
+        const startTime = ctx.currentTime + index * 0.03;
+        gainNode.gain.setValueAtTime(0, startTime);
+        gainNode.gain.linearRampToValueAtTime(0.15, startTime + 0.02);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 0.2);
+
+        osc.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + 0.25);
+    });
+}
 
 function playSound(name) {
-    if (sounds[name]) {
-        sounds[name].currentTime = 0;
-        sounds[name].play().catch(() => {}); // 자동재생 차단 무시
+    try {
+        switch(name) {
+            case 'jump':
+                createJumpSound();
+                break;
+            case 'score':
+                createWindSound(0.12, 0.15);
+                break;
+            case 'hit':
+                createHitSound();
+                break;
+            case 'levelup':
+                createLevelUpSound();
+                break;
+            case 'token':
+                createTokenSound();
+                break;
+        }
+    } catch(e) {
+        // 오디오 에러 무시
     }
 }
 
