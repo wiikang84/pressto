@@ -26,6 +26,7 @@ const characterBackBtn = document.getElementById('character-back-btn');
 const characterPreview = document.getElementById('character-preview');
 const characterPreviewCtx = characterPreview ? characterPreview.getContext('2d') : null;
 const fullscreenBtn = document.getElementById('fullscreen-btn');
+const gameoverDifficultyEl = document.getElementById('gameover-difficulty');
 
 // iOS 감지
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -1924,6 +1925,13 @@ function gameOver() {
     tokenDisplay.classList.remove('visible');
     pauseBtn.classList.add('hidden');
     gameoverScreen.classList.remove('hidden');
+
+    // 난이도 표시
+    if (gameoverDifficultyEl) {
+        const settings = difficultySettings[currentDifficulty];
+        gameoverDifficultyEl.textContent = settings.name;
+        gameoverDifficultyEl.className = 'gameover-difficulty ' + currentDifficulty;
+    }
 
     // 되살리기 버튼 상태
     updateTokenDisplays();

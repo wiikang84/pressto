@@ -390,6 +390,32 @@ body {
     75% { transform: translateX(5px); }
 }
 
+.gameover-difficulty {
+    font-size: clamp(14px, 3.5vw, 22px);
+    font-weight: bold;
+    padding: 6px 20px;
+    border-radius: 20px;
+    display: inline-block;
+}
+
+.gameover-difficulty.easy {
+    background: #4CAF50;
+    color: #fff;
+    box-shadow: 0 3px 0 #2E7D32;
+}
+
+.gameover-difficulty.middle {
+    background: #FF9800;
+    color: #fff;
+    box-shadow: 0 3px 0 #E65100;
+}
+
+.gameover-difficulty.hard {
+    background: #f44336;
+    color: #fff;
+    box-shadow: 0 3px 0 #B71C1C;
+}
+
 .score-box {
     background: linear-gradient(180deg, #2a2a4a 0%, #1a1a3a 100%);
     padding: clamp(10px, 3vh, 20px) clamp(20px, 6vw, 40px);
