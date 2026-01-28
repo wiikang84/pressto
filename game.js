@@ -848,6 +848,52 @@ let levelUpDisplay = 0; // 레벨업 표시 타이머
 let currentCycle = 1; // 회차 (레벨 5 이후 증가)
 const LEVELS_PER_CYCLE = 5;
 
+// 아이템 시스템
+const ItemType = {
+    SHIELD: 'shield',     // 무적
+    SHRINK: 'shrink',     // 축소
+    ENLARGE: 'enlarge'    // 확대 (디버프)
+};
+
+const itemConfig = {
+    [ItemType.SHIELD]: {
+        name: '무적',
+        emoji: '🛡️',
+        color: '#4FC3F7',
+        glowColor: '#00BCD4',
+        duration: 5000,  // 5초
+        isDebuff: false
+    },
+    [ItemType.SHRINK]: {
+        name: '축소',
+        emoji: '🔹',
+        color: '#66BB6A',
+        glowColor: '#4CAF50',
+        duration: 8000,  // 8초
+        isDebuff: false
+    },
+    [ItemType.ENLARGE]: {
+        name: '확대',
+        emoji: '🔴',
+        color: '#EF5350',
+        glowColor: '#F44336',
+        duration: 6000,  // 6초
+        isDebuff: true
+    }
+};
+
+// 난이도별 아이템 출현 확률
+const itemSpawnRates = {
+    easy: { shield: 0.08, shrink: 0.10, enlarge: 0 },
+    middle: { shield: 0.05, shrink: 0.07, enlarge: 0.04 },
+    hard: { shield: 0.03, shrink: 0.05, enlarge: 0.06 }
+};
+
+let items = [];  // 화면에 있는 아이템들
+let activeItem = null;  // 현재 활성화된 아이템
+let activeItemEndTime = 0;  // 아이템 효과 종료 시간
+let playerSizeMultiplier = 1;  // 플레이어 크기 배율
+
 // 레벨별 테마 정의
 const levelThemes = [
     { // Lv.1 - 맑은 하늘
@@ -953,6 +999,10 @@ function resetGame() {
     pipes = [];
     particles = [];
     collectibleTokens = [];
+    items = [];
+    activeItem = null;
+    activeItemEndTime = 0;
+    playerSizeMultiplier = 1;
     lastPipeTime = 0;
     currentLevel = 1;
     currentCycle = 1;
@@ -986,13 +1036,110 @@ function spawnPipe() {
     const maxY = canvas.height - currentGap - pipeConfig.minHeight;
     const gapY = Math.random() * (maxY - minY) + minY;
 
-    pipes.push({
+    const newPipe = {
         x: canvas.width,
         gapY: gapY,
         gapSize: currentGap, // 각 파이프마다 갭 저장
         width: pipeConfig.width,
         passed: false
+    };
+    pipes.push(newPipe);
+
+    // 연습 모드가 아닐 때만 아이템 생성
+    if (!practiceMode) {
+        spawnItem(newPipe);
+    }
+}
+
+// 아이템 생성
+function spawnItem(pipe) {
+    const rates = itemSpawnRates[currentDifficulty];
+    const rand = Math.random();
+
+    let itemType = null;
+    let cumulative = 0;
+
+    // 확률에 따라 아이템 타입 결정
+    cumulative += rates.shield;
+    if (rand < cumulative) {
+        itemType = ItemType.SHIELD;
+    } else {
+        cumulative += rates.shrink;
+        if (rand < cumulative) {
+            itemType = ItemType.SHRINK;
+        } else {
+            cumulative += rates.enlarge;
+            if (rand < cumulative) {
+                itemType = ItemType.ENLARGE;
+            }
+        }
+    }
+
+    if (!itemType) return;
+
+    // 파이프 갭 중앙에 아이템 배치
+    const gap = pipe.gapSize || pipeConfig.gap;
+    const itemY = pipe.gapY + gap / 2;
+
+    items.push({
+        x: pipe.x + pipe.width / 2,
+        y: itemY,
+        type: itemType,
+        radius: 25,
+        collected: false,
+        pulse: 0
     });
+}
+
+// 아이템 사운드 생성
+function createItemSound(isDebuff = false) {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    if (isDebuff) {
+        // 디버프: 낮은 음
+        oscillator.frequency.setValueAtTime(200, ctx.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.2);
+    } else {
+        // 버프: 높은 음
+        oscillator.frequency.setValueAtTime(600, ctx.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(900, ctx.currentTime + 0.15);
+    }
+
+    oscillator.type = 'sine';
+    gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.3);
+}
+
+// 아이템 획득
+function collectItem(item) {
+    const config = itemConfig[item.type];
+
+    // 기존 아이템 효과 제거
+    activeItem = item.type;
+    activeItemEndTime = Date.now() + config.duration;
+
+    // 크기 변경 적용
+    if (item.type === ItemType.SHRINK) {
+        playerSizeMultiplier = 0.6;  // 40% 작아짐
+    } else if (item.type === ItemType.ENLARGE) {
+        playerSizeMultiplier = 1.5;  // 50% 커짐
+    }
+
+    // 효과음
+    createItemSound(config.isDebuff);
+
+    // 파티클 효과
+    createParticles(item.x, item.y, 15, config.color);
 }
 
 // 수집용 토큰 생성 (5레벨마다)
@@ -1265,6 +1412,9 @@ function drawPlayer() {
     ctx.save();
     ctx.translate(player.x, player.y);
 
+    // 크기 배율 적용
+    ctx.scale(playerSizeMultiplier, playerSizeMultiplier);
+
     // 기울기 (속도에 따라)
     const rotation = Math.min(Math.max(player.velocity * 3, -30), 30) * Math.PI / 180;
     ctx.rotate(rotation);
@@ -1278,13 +1428,29 @@ function drawPlayer() {
         }
     }
 
-    // 눌렀을 때/부활 무적일 때 효과
-    const isInvincible = reviveInvincibleTime > Date.now() || practiceMode;
+    // 무적 상태 체크 (연습/부활/아이템)
+    const isReviveInvincible = reviveInvincibleTime > Date.now() || practiceMode;
+    const isItemInvincible = activeItem === ItemType.SHIELD;
 
-    if (isInvincible && gameState === GameState.PLAYING) {
-        // 무적 상태 글로우 효과
-        ctx.shadowColor = '#00FFFF';
-        ctx.shadowBlur = 20 + Math.sin(Date.now() * 0.01) * 10;
+    // 아이템 효과별 글로우
+    if (gameState === GameState.PLAYING) {
+        if (isItemInvincible) {
+            // 무적 아이템: 파란 글로우
+            ctx.shadowColor = '#4FC3F7';
+            ctx.shadowBlur = 25 + Math.sin(Date.now() * 0.015) * 15;
+        } else if (activeItem === ItemType.SHRINK) {
+            // 축소: 초록 글로우
+            ctx.shadowColor = '#66BB6A';
+            ctx.shadowBlur = 15 + Math.sin(Date.now() * 0.01) * 8;
+        } else if (activeItem === ItemType.ENLARGE) {
+            // 확대: 빨간 글로우
+            ctx.shadowColor = '#EF5350';
+            ctx.shadowBlur = 20 + Math.sin(Date.now() * 0.012) * 10;
+        } else if (isReviveInvincible) {
+            // 연습/부활 무적: 시안 글로우
+            ctx.shadowColor = '#00FFFF';
+            ctx.shadowBlur = 20 + Math.sin(Date.now() * 0.01) * 10;
+        }
     }
 
     // 선택된 캐릭터로 그리기
@@ -1294,6 +1460,42 @@ function drawPlayer() {
 
     ctx.shadowBlur = 0;
     ctx.restore();
+}
+
+// 아이템 그리기
+function drawItems() {
+    items.forEach(item => {
+        if (item.collected) return;
+
+        const config = itemConfig[item.type];
+        const pulseScale = 1 + Math.sin(item.pulse) * 0.15;
+
+        ctx.save();
+        ctx.translate(item.x, item.y);
+        ctx.scale(pulseScale, pulseScale);
+
+        // 글로우 효과
+        ctx.shadowColor = config.glowColor;
+        ctx.shadowBlur = 15 + Math.sin(item.pulse * 2) * 8;
+
+        // 배경 원
+        ctx.beginPath();
+        ctx.arc(0, 0, item.radius, 0, Math.PI * 2);
+        ctx.fillStyle = config.isDebuff ? 'rgba(255, 100, 100, 0.8)' : 'rgba(100, 200, 255, 0.8)';
+        ctx.fill();
+        ctx.strokeStyle = config.color;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // 이모지
+        ctx.shadowBlur = 0;
+        ctx.font = 'bold 24px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(config.emoji, 0, 0);
+
+        ctx.restore();
+    });
 }
 
 // 파이프 그리기
@@ -1513,20 +1715,24 @@ function drawCollectibleTokens() {
 function checkCollision() {
     const hitboxShrink = 25; // 충돌 판정 많이 여유
 
+    // 현재 플레이어 크기 (아이템 효과 반영)
+    const currentWidth = player.width * playerSizeMultiplier;
+    const currentHeight = player.height * playerSizeMultiplier;
+
     // 화면 상하단 충돌 (30% 이상 벗어나면 사망)
-    const boundaryTolerance = player.height * 0.3; // 30% 여유
-    if (player.y - player.height/2 + boundaryTolerance < 0 ||
-        player.y + player.height/2 - boundaryTolerance > canvas.height) {
+    const boundaryTolerance = currentHeight * 0.3; // 30% 여유
+    if (player.y - currentHeight/2 + boundaryTolerance < 0 ||
+        player.y + currentHeight/2 - boundaryTolerance > canvas.height) {
         return true;
     }
 
     // 파이프 충돌
     for (let pipe of pipes) {
         const gap = pipe.gapSize || pipeConfig.gap;
-        const playerLeft = player.x - player.width/2 + hitboxShrink;
-        const playerRight = player.x + player.width/2 - hitboxShrink;
-        const playerTop = player.y - player.height/2 + hitboxShrink;
-        const playerBottom = player.y + player.height/2 - hitboxShrink;
+        const playerLeft = player.x - currentWidth/2 + hitboxShrink;
+        const playerRight = player.x + currentWidth/2 - hitboxShrink;
+        const playerTop = player.y - currentHeight/2 + hitboxShrink;
+        const playerBottom = player.y + currentHeight/2 - hitboxShrink;
 
         const pipeLeft = pipe.x;
         const pipeRight = pipe.x + pipe.width;
@@ -1562,6 +1768,15 @@ function update(deltaTime) {
 
     // 부활 무적 체크
     const isReviveInvincible = reviveInvincibleTime > now;
+
+    // 아이템 효과 만료 체크
+    if (activeItem && now >= activeItemEndTime) {
+        activeItem = null;
+        playerSizeMultiplier = 1;
+    }
+
+    // 아이템 무적 체크 (무적 아이템 또는 부활 무적)
+    const isItemInvincible = activeItem === ItemType.SHIELD;
 
     // 토큰 표시 타이머
     if (tokenDisplay_timer > 0) {
@@ -1632,6 +1847,33 @@ function update(deltaTime) {
     // 화면 밖 파이프 제거
     pipes = pipes.filter(pipe => pipe.x + pipe.width > 0);
 
+    // 아이템 업데이트
+    const currentPlayerWidth = player.width * playerSizeMultiplier;
+    const currentPlayerHeight = player.height * playerSizeMultiplier;
+
+    items.forEach(item => {
+        if (item.collected) return;
+
+        // 아이템 이동
+        item.x -= pipeConfig.speed * speedMultiplier;
+
+        // 펄스 애니메이션
+        item.pulse = (item.pulse + 0.1) % (Math.PI * 2);
+
+        // 플레이어와 충돌 체크 (수집)
+        const dx = player.x - item.x;
+        const dy = player.y - item.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < item.radius + currentPlayerWidth / 2 - 10) {
+            item.collected = true;
+            collectItem(item);
+        }
+    });
+
+    // 화면 밖 아이템 제거
+    items = items.filter(item => item.x + item.radius > 0 && !item.collected);
+
     // 파티클 업데이트
     particles.forEach(p => {
         p.x += p.vx;
@@ -1640,16 +1882,17 @@ function update(deltaTime) {
     });
     particles = particles.filter(p => p.life > 0);
 
-    // 충돌 감지 (연습 모드 또는 부활 무적 중에는 죽지 않음)
+    // 충돌 감지 (연습 모드, 부활 무적, 아이템 무적 중에는 죽지 않음)
     if (checkCollision()) {
-        if (practiceMode || isReviveInvincible) {
+        if (practiceMode || isReviveInvincible || isItemInvincible) {
             // 연습 모드/무적: 화면 밖으로 나가면 중앙으로 복귀
-            if (player.y < player.height/2) {
-                player.y = player.height/2 + 10;
+            const halfHeight = (player.height * playerSizeMultiplier) / 2;
+            if (player.y < halfHeight) {
+                player.y = halfHeight + 10;
                 player.velocity = 0;
             }
-            if (player.y > canvas.height - player.height/2) {
-                player.y = canvas.height - player.height/2 - 10;
+            if (player.y > canvas.height - halfHeight) {
+                player.y = canvas.height - halfHeight - 10;
                 player.velocity = 0;
             }
         } else {
@@ -1662,6 +1905,11 @@ function update(deltaTime) {
 function gameOver() {
     gameState = GameState.GAMEOVER;
     playSound('hit');
+
+    // 아이템 효과 초기화
+    activeItem = null;
+    activeItemEndTime = 0;
+    playerSizeMultiplier = 1;
 
     // 최고 점수 업데이트 (난이도별)
     if (score > bestScore) {
@@ -1976,15 +2224,58 @@ function drawLevelUI() {
     }
 }
 
+// 아이템 상태 UI 그리기
+function drawItemUI() {
+    if (!activeItem || gameState !== GameState.PLAYING) return;
+
+    const config = itemConfig[activeItem];
+    const now = Date.now();
+    const remaining = Math.max(0, activeItemEndTime - now);
+    const progress = remaining / config.duration;
+
+    // 우측 하단에 아이템 표시
+    const boxX = canvas.width - 100;
+    const boxY = canvas.height - 60;
+    const boxWidth = 90;
+    const boxHeight = 50;
+
+    ctx.save();
+
+    // 배경
+    ctx.fillStyle = config.isDebuff ? 'rgba(200, 50, 50, 0.8)' : 'rgba(50, 150, 200, 0.8)';
+    ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+    ctx.strokeStyle = config.color;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+
+    // 이모지와 이름
+    ctx.font = 'bold 16px Arial';
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.fillText(config.emoji + ' ' + config.name, boxX + boxWidth/2, boxY + 20);
+
+    // 남은 시간 바
+    const barWidth = boxWidth - 10;
+    const barHeight = 8;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(boxX + 5, boxY + 32, barWidth, barHeight);
+    ctx.fillStyle = config.color;
+    ctx.fillRect(boxX + 5, boxY + 32, barWidth * progress, barHeight);
+
+    ctx.restore();
+}
+
 // 렌더링
 function render() {
     drawBackground();
     drawPipes();
+    drawItems();
     drawPlayer();
     drawParticles();
     drawPracticeUI();
     drawLevelUI();
     drawTokenEarnUI();
+    drawItemUI();
 }
 
 // 게임 루프
