@@ -159,279 +159,49 @@ function drawCharacter(ctx, x, y, size, charId, isPressed = false, isAngry = fal
     ctx.save();
     ctx.translate(x, y);
 
-    // === 꼬리 (뒤에 먼저 그리기) ===
+    // 꼬리
     ctx.fillStyle = colors.wing;
     ctx.beginPath();
     ctx.moveTo(-size * 0.8, -size * 0.1);
-    ctx.lineTo(-size * 1.3, -size * 0.4);
-    ctx.lineTo(-size * 1.4, -size * 0.1);
-    ctx.lineTo(-size * 1.3, size * 0.2);
+    ctx.lineTo(-size * 1.3, -size * 0.3);
     ctx.lineTo(-size * 0.8, size * 0.1);
     ctx.closePath();
     ctx.fill();
 
-    // === 몸통 (둥근 새 형태) ===
+    // 몸통
     ctx.fillStyle = colors.body;
     ctx.beginPath();
-    // 머리 + 몸통 연결된 새 형태
-    ctx.ellipse(0, 0, size * 0.9, size * 0.75, 0, 0, Math.PI * 2);
+    ctx.arc(0, 0, size * 0.8, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = colors.bodyStroke;
-    ctx.lineWidth = size * 0.06;
+    ctx.lineWidth = 2;
     ctx.stroke();
 
-    // === 머리 볏/깃털 (캐릭터별 다름) ===
+    // 날개
     ctx.fillStyle = colors.wing;
-    if (charId === 'ppuang') {
-        // 뿔처럼 뾰족한 깃털
-        ctx.beginPath();
-        ctx.moveTo(-size * 0.2, -size * 0.7);
-        ctx.lineTo(size * 0.1, -size * 1.1);
-        ctx.lineTo(size * 0.3, -size * 0.65);
-        ctx.closePath();
-        ctx.fill();
-    } else if (charId === 'ppuing') {
-        // 리본 모양
-        ctx.fillStyle = '#FF69B4';
-        ctx.beginPath();
-        ctx.arc(-size * 0.1, -size * 0.85, size * 0.2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(size * 0.25, -size * 0.85, size * 0.2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#FF1493';
-        ctx.beginPath();
-        ctx.arc(size * 0.08, -size * 0.8, size * 0.1, 0, Math.PI * 2);
-        ctx.fill();
-    } else if (charId === 'ppuban') {
-        // 왕관 모양
-        ctx.fillStyle = '#FFD700';
-        ctx.beginPath();
-        ctx.moveTo(-size * 0.3, -size * 0.65);
-        ctx.lineTo(-size * 0.2, -size * 1.0);
-        ctx.lineTo(size * 0.0, -size * 0.75);
-        ctx.lineTo(size * 0.2, -size * 1.0);
-        ctx.lineTo(size * 0.3, -size * 0.65);
-        ctx.closePath();
-        ctx.fill();
-    } else {
-        // 기본 깃털
-        ctx.beginPath();
-        ctx.ellipse(size * 0.05, -size * 0.85, size * 0.12, size * 0.25, 0.2, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    // === 날개 ===
-    const wingY = isPressed ? -size * 0.3 : size * 0.1;
-    const wingAngle = isPressed ? -0.5 : 0.3;
-    ctx.fillStyle = colors.wing;
+    const wingY = isPressed ? -size * 0.4 : size * 0.1;
     ctx.beginPath();
-    ctx.save();
-    ctx.translate(-size * 0.5, wingY);
-    ctx.rotate(wingAngle);
-    ctx.ellipse(0, 0, size * 0.35, size * 0.55, 0, 0, Math.PI * 2);
-    ctx.restore();
+    ctx.arc(-size * 0.4, wingY, size * 0.35, 0, Math.PI * 2);
     ctx.fill();
 
-    // === 배 (밝은색) ===
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    // 눈 (공통)
+    ctx.fillStyle = 'white';
     ctx.beginPath();
-    ctx.ellipse(size * 0.1, size * 0.15, size * 0.5, size * 0.45, 0, 0, Math.PI * 2);
+    ctx.arc(size * 0.3, -size * 0.15, size * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(size * 0.35, -size * 0.1, size * 0.1, 0, Math.PI * 2);
     ctx.fill();
 
-    // === 캐릭터별 얼굴 표정 ===
-    switch(charId) {
-        case 'ppuang': // 화난 새
-            // 찡그린 눈썹
-            ctx.strokeStyle = '#000';
-            ctx.lineWidth = size * 0.1;
-            ctx.beginPath();
-            ctx.moveTo(size * 0.1, -size * 0.45);
-            ctx.lineTo(size * 0.55, -size * 0.25);
-            ctx.stroke();
-            // 화난 눈
-            ctx.fillStyle = 'white';
-            ctx.beginPath();
-            ctx.ellipse(size * 0.35, -size * 0.15, size * 0.28, size * 0.22, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#000';
-            ctx.lineWidth = size * 0.04;
-            ctx.stroke();
-            ctx.fillStyle = '#000';
-            ctx.beginPath();
-            ctx.arc(size * 0.4, -size * 0.1, size * 0.12, 0, Math.PI * 2);
-            ctx.fill();
-            // 부리
-            ctx.fillStyle = colors.beak;
-            ctx.beginPath();
-            ctx.moveTo(size * 0.65, -size * 0.05);
-            ctx.lineTo(size * 1.1, size * 0.1);
-            ctx.lineTo(size * 0.65, size * 0.2);
-            ctx.closePath();
-            ctx.fill();
-            ctx.strokeStyle = '#CC5500';
-            ctx.lineWidth = size * 0.03;
-            ctx.stroke();
-            break;
-
-        case 'ppuing': // 애교 새
-            // 볼터치
-            ctx.fillStyle = 'rgba(255, 100, 150, 0.5)';
-            ctx.beginPath();
-            ctx.ellipse(size * 0.15, size * 0.2, size * 0.2, size * 0.12, 0, 0, Math.PI * 2);
-            ctx.fill();
-            // 윙크 눈
-            ctx.fillStyle = 'white';
-            ctx.beginPath();
-            ctx.ellipse(size * 0.35, -size * 0.15, size * 0.25, size * 0.2, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#000';
-            ctx.lineWidth = size * 0.03;
-            ctx.stroke();
-            // 하트 눈
-            ctx.fillStyle = '#FF69B4';
-            drawHeart(ctx, size * 0.35, -size * 0.12, size * 0.12);
-            // 부리 (웃는)
-            ctx.fillStyle = colors.beak;
-            ctx.beginPath();
-            ctx.moveTo(size * 0.6, size * 0.0);
-            ctx.quadraticCurveTo(size * 0.95, size * 0.1, size * 0.6, size * 0.25);
-            ctx.closePath();
-            ctx.fill();
-            break;
-
-        case 'ppuul': // 쿨한 새
-            // 선글라스
-            ctx.fillStyle = '#111';
-            ctx.beginPath();
-            ctx.roundRect(size * 0.1, -size * 0.35, size * 0.5, size * 0.28, size * 0.05);
-            ctx.fill();
-            ctx.strokeStyle = '#FFD700';
-            ctx.lineWidth = size * 0.04;
-            ctx.stroke();
-            // 선글라스 다리
-            ctx.strokeStyle = '#FFD700';
-            ctx.lineWidth = size * 0.05;
-            ctx.beginPath();
-            ctx.moveTo(size * 0.1, -size * 0.2);
-            ctx.lineTo(-size * 0.3, -size * 0.25);
-            ctx.stroke();
-            // 반사광
-            ctx.fillStyle = 'rgba(255,255,255,0.3)';
-            ctx.beginPath();
-            ctx.ellipse(size * 0.25, -size * 0.28, size * 0.08, size * 0.05, -0.3, 0, Math.PI * 2);
-            ctx.fill();
-            // 부리
-            ctx.fillStyle = colors.beak;
-            ctx.beginPath();
-            ctx.moveTo(size * 0.65, size * 0.05);
-            ctx.lineTo(size * 1.0, size * 0.12);
-            ctx.lineTo(size * 0.65, size * 0.2);
-            ctx.closePath();
-            ctx.fill();
-            break;
-
-        case 'ppuseul': // 슬픈 새
-            // 축 처진 눈썹
-            ctx.strokeStyle = colors.bodyStroke;
-            ctx.lineWidth = size * 0.08;
-            ctx.beginPath();
-            ctx.moveTo(size * 0.1, -size * 0.45);
-            ctx.lineTo(size * 0.5, -size * 0.35);
-            ctx.stroke();
-            // 슬픈 눈
-            ctx.fillStyle = 'white';
-            ctx.beginPath();
-            ctx.ellipse(size * 0.35, -size * 0.1, size * 0.22, size * 0.18, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#000';
-            ctx.beginPath();
-            ctx.arc(size * 0.38, -size * 0.05, size * 0.1, 0, Math.PI * 2);
-            ctx.fill();
-            // 눈물
-            ctx.fillStyle = '#87CEEB';
-            ctx.beginPath();
-            ctx.moveTo(size * 0.5, size * 0.0);
-            ctx.quadraticCurveTo(size * 0.55, size * 0.15, size * 0.48, size * 0.25);
-            ctx.quadraticCurveTo(size * 0.42, size * 0.15, size * 0.5, size * 0.0);
-            ctx.fill();
-            // 부리 (아래로)
-            ctx.fillStyle = colors.beak;
-            ctx.beginPath();
-            ctx.moveTo(size * 0.6, size * 0.1);
-            ctx.lineTo(size * 0.9, size * 0.2);
-            ctx.lineTo(size * 0.6, size * 0.25);
-            ctx.closePath();
-            ctx.fill();
-            break;
-
-        case 'ppuban': // 신난 새
-            // 별 눈
-            ctx.fillStyle = 'white';
-            ctx.beginPath();
-            ctx.ellipse(size * 0.35, -size * 0.12, size * 0.28, size * 0.24, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#000';
-            ctx.lineWidth = size * 0.03;
-            ctx.stroke();
-            ctx.fillStyle = '#FFD700';
-            drawStar(ctx, size * 0.38, -size * 0.08, size * 0.14, 5);
-            // 볼터치
-            ctx.fillStyle = 'rgba(255, 150, 150, 0.5)';
-            ctx.beginPath();
-            ctx.ellipse(size * 0.15, size * 0.2, size * 0.18, size * 0.1, 0, 0, Math.PI * 2);
-            ctx.fill();
-            // 활짝 웃는 부리
-            ctx.fillStyle = colors.beak;
-            ctx.beginPath();
-            ctx.moveTo(size * 0.55, size * 0.0);
-            ctx.quadraticCurveTo(size * 1.05, size * 0.15, size * 0.55, size * 0.35);
-            ctx.closePath();
-            ctx.fill();
-            // 입안
-            ctx.fillStyle = '#8B0000';
-            ctx.beginPath();
-            ctx.ellipse(size * 0.7, size * 0.18, size * 0.12, size * 0.08, 0, 0, Math.PI * 2);
-            ctx.fill();
-            break;
-
-        default: // ppukku - 기본 귀여운 새
-            // 큰 눈
-            ctx.fillStyle = 'white';
-            ctx.beginPath();
-            ctx.ellipse(size * 0.35, -size * 0.12, size * 0.28, size * 0.24, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#000';
-            ctx.lineWidth = size * 0.03;
-            ctx.stroke();
-            // 눈동자
-            ctx.fillStyle = '#000';
-            ctx.beginPath();
-            ctx.arc(size * 0.42, -size * 0.08, size * 0.12, 0, Math.PI * 2);
-            ctx.fill();
-            // 눈 하이라이트
-            ctx.fillStyle = 'white';
-            ctx.beginPath();
-            ctx.arc(size * 0.47, -size * 0.15, size * 0.05, 0, Math.PI * 2);
-            ctx.fill();
-            // 볼터치
-            ctx.fillStyle = 'rgba(255, 150, 150, 0.4)';
-            ctx.beginPath();
-            ctx.ellipse(size * 0.12, size * 0.18, size * 0.18, size * 0.1, 0, 0, Math.PI * 2);
-            ctx.fill();
-            // 부리
-            ctx.fillStyle = colors.beak;
-            ctx.beginPath();
-            ctx.moveTo(size * 0.65, size * 0.0);
-            ctx.lineTo(size * 1.05, size * 0.1);
-            ctx.lineTo(size * 0.65, size * 0.22);
-            ctx.closePath();
-            ctx.fill();
-            ctx.strokeStyle = '#CC5500';
-            ctx.lineWidth = size * 0.02;
-            ctx.stroke();
-            break;
-    }
+    // 부리
+    ctx.fillStyle = colors.beak;
+    ctx.beginPath();
+    ctx.moveTo(size * 0.6, 0);
+    ctx.lineTo(size * 1.0, size * 0.1);
+    ctx.lineTo(size * 0.6, size * 0.2);
+    ctx.closePath();
+    ctx.fill();
 
     ctx.restore();
 }
@@ -807,7 +577,7 @@ function playSound(name) {
 let clouds = [];
 function initClouds() {
     clouds = [];
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 4; i++) {
         clouds.push({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height * 0.6,
@@ -819,10 +589,30 @@ function initClouds() {
 }
 
 // Canvas 크기 설정
+// Canvas 해상도 제한 (모바일 성능 최적화)
+const MAX_CANVAS_WIDTH = 960;
+const MAX_CANVAS_HEIGHT = 540;
+
 function resizeCanvas() {
     const container = document.getElementById('game-container');
-    canvas.width = container.clientWidth;
-    canvas.height = container.clientHeight;
+    let w = container.clientWidth;
+    let h = container.clientHeight;
+
+    // 해상도 제한으로 모바일 성능 확보
+    if (w > MAX_CANVAS_WIDTH) {
+        const ratio = MAX_CANVAS_WIDTH / w;
+        w = MAX_CANVAS_WIDTH;
+        h = Math.round(h * ratio);
+    }
+    if (h > MAX_CANVAS_HEIGHT) {
+        const ratio = MAX_CANVAS_HEIGHT / h;
+        h = MAX_CANVAS_HEIGHT;
+        w = Math.round(w * ratio);
+    }
+
+    canvas.width = w;
+    canvas.height = h;
+    cachedBgLevel = -1; // gradient 캐시 초기화
 }
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
@@ -1190,8 +980,11 @@ function spawnCollectibleToken() {
 }
 
 // 파티클 생성
+const MAX_PARTICLES = 30;
 function createParticles(x, y, count, color) {
-    for (let i = 0; i < count; i++) {
+    const actualCount = Math.min(count, 8); // 파티클 수 제한
+    for (let i = 0; i < actualCount; i++) {
+        if (particles.length >= MAX_PARTICLES) break;
         particles.push({
             x: x,
             y: y,
@@ -1223,128 +1016,62 @@ function drawBackground() {
     }
     drawParallaxClouds();
 
-    // 레벨별 배경 장식
+    // 레벨별 배경 장식 (극도로 간소화)
     const themeIndex = (currentLevel - 1) % LEVELS_PER_CYCLE;
 
     if (themeIndex === 0) {
-        // 맑은 하늘 - 추가 장식
-        // 태양
+        // 맑은 하늘 - 태양만
         ctx.fillStyle = 'rgba(255, 255, 200, 0.8)';
         ctx.beginPath();
-        ctx.arc(canvas.width * 0.9, canvas.height * 0.15, 35, 0, Math.PI * 2);
+        ctx.arc(canvas.width * 0.9, canvas.height * 0.15, 30, 0, Math.PI * 2);
         ctx.fill();
-        // 태양광
-        ctx.strokeStyle = 'rgba(255, 255, 200, 0.3)';
-        ctx.lineWidth = 3;
-        for (let i = 0; i < 8; i++) {
-            const angle = (i / 8) * Math.PI * 2;
-            ctx.beginPath();
-            ctx.moveTo(canvas.width * 0.9 + Math.cos(angle) * 45, canvas.height * 0.15 + Math.sin(angle) * 45);
-            ctx.lineTo(canvas.width * 0.9 + Math.cos(angle) * 60, canvas.height * 0.15 + Math.sin(angle) * 60);
-            ctx.stroke();
-        }
     } else if (themeIndex === 1) {
-        // 석양 - 태양
-        const sunGradient = ctx.createRadialGradient(
-            canvas.width * 0.85, canvas.height * 0.35, 0,
-            canvas.width * 0.85, canvas.height * 0.35, 50
-        );
-        sunGradient.addColorStop(0, 'rgba(255, 200, 100, 1)');
-        sunGradient.addColorStop(0.5, 'rgba(255, 150, 50, 0.8)');
-        sunGradient.addColorStop(1, 'rgba(255, 100, 50, 0)');
-        ctx.fillStyle = sunGradient;
+        // 석양 - 태양 (단색)
+        ctx.fillStyle = 'rgba(255, 180, 80, 0.9)';
         ctx.beginPath();
-        ctx.arc(canvas.width * 0.85, canvas.height * 0.35, 50, 0, Math.PI * 2);
+        ctx.arc(canvas.width * 0.85, canvas.height * 0.35, 40, 0, Math.PI * 2);
         ctx.fill();
     } else if (themeIndex === 2) {
-        // 밤하늘 - 별 (개수 줄임)
-        const time = frameNow * 0.001;
-        for (let i = 0; i < 25; i++) {
-            const x = (i * 137 + 50) % canvas.width;
-            const y = (i * 89 + 30) % canvas.height;
-            const size = (i % 3) + 1;
-            const twinkle = 0.5 + Math.sin(time * 2 + i) * 0.5;
-            ctx.fillStyle = `rgba(255, 255, 255, ${twinkle})`;
-            ctx.fillRect(x - size / 2, y - size / 2, size, size);
+        // 밤하늘 - 별 + 달
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        for (let i = 0; i < 15; i++) {
+            const sx = (i * 137 + 50) % canvas.width;
+            const sy = (i * 89 + 30) % canvas.height;
+            ctx.fillRect(sx, sy, 2, 2);
         }
-        // 달 (shadowBlur 제거)
-        ctx.fillStyle = 'rgba(255, 250, 205, 0.3)';
-        ctx.beginPath();
-        ctx.arc(canvas.width * 0.8, canvas.height * 0.18, 45, 0, Math.PI * 2);
-        ctx.fill();
         ctx.fillStyle = '#FFFACD';
         ctx.beginPath();
-        ctx.arc(canvas.width * 0.8, canvas.height * 0.18, 35, 0, Math.PI * 2);
+        ctx.arc(canvas.width * 0.8, canvas.height * 0.18, 30, 0, Math.PI * 2);
         ctx.fill();
     } else if (themeIndex === 3) {
-        // 우주 - 별 (개수 줄임, gradient 제거)
-        // 별
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-        for (let i = 0; i < 40; i++) {
-            const x = (i * 137) % canvas.width;
-            const y = (i * 89) % canvas.height;
-            const size = (i % 2) + 0.5;
-            ctx.fillRect(x, y, size, size);
+        // 우주 - 별 + 행성
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        for (let i = 0; i < 20; i++) {
+            ctx.fillRect((i * 137) % canvas.width, (i * 89) % canvas.height, 1.5, 1.5);
         }
-        // 행성 (단색)
         ctx.fillStyle = '#9B59B6';
         ctx.beginPath();
-        ctx.arc(canvas.width * 0.9, canvas.height * 0.15, 28, 0, Math.PI * 2);
+        ctx.arc(canvas.width * 0.9, canvas.height * 0.15, 25, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-        ctx.beginPath();
-        ctx.arc(canvas.width * 0.9 - 5, canvas.height * 0.15 - 5, 20, 0, Math.PI * 2);
-        ctx.fill();
-        // 행성 고리
-        ctx.strokeStyle = 'rgba(200, 180, 220, 0.6)';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.ellipse(canvas.width * 0.9, canvas.height * 0.15, 45, 12, -0.3, 0, Math.PI * 2);
-        ctx.stroke();
     } else if (themeIndex === 4) {
-        // 네온 시티 - 빌딩 (Math.random 제거, 고정 높이)
+        // 네온 시티 - 빌딩만
         ctx.fillStyle = 'rgba(20, 20, 40, 0.8)';
-        for (let i = 0; i < 12; i++) {
-            const bx = i * (canvas.width / 12);
-            const bh = 60 + (i * 37 % 90);
-            ctx.fillRect(bx, canvas.height - bh, canvas.width / 15, bh);
-        }
-        // 네온 라인
-        const neonTime = frameNow * 0.003;
-        const neonAlpha1 = 0.3 + Math.sin(neonTime) * 0.2;
-        const neonAlpha2 = 0.3 + Math.cos(neonTime) * 0.2;
-        ctx.strokeStyle = `rgba(255, 0, 255, ${neonAlpha1})`;
-        ctx.lineWidth = 2;
-        for (let i = 0; i < 3; i++) {
-            ctx.beginPath();
-            ctx.moveTo(0, canvas.height * (0.3 + i * 0.15));
-            ctx.lineTo(canvas.width, canvas.height * (0.35 + i * 0.15));
-            ctx.stroke();
-        }
-        ctx.strokeStyle = `rgba(0, 255, 255, ${neonAlpha2})`;
-        for (let i = 0; i < 2; i++) {
-            ctx.beginPath();
-            ctx.moveTo(canvas.width * (0.25 + i * 0.4), 0);
-            ctx.lineTo(canvas.width * (0.3 + i * 0.4), canvas.height * 0.6);
-            ctx.stroke();
+        for (let i = 0; i < 8; i++) {
+            ctx.fillRect(i * (canvas.width / 8), canvas.height - 60 - (i * 37 % 80), canvas.width / 10, 60 + (i * 37 % 80));
         }
     }
 
-    // 회차 표시 (2회차 이상)
+    // 회차 표시 (2회차 이상) - 간소화
     if (currentCycle > 1) {
-        ctx.fillStyle = 'rgba(255, 215, 0, 0.15)';
-        ctx.font = `bold ${60 + currentCycle * 8}px "Press Start 2P", sans-serif`;
+        ctx.fillStyle = 'rgba(255, 215, 0, 0.12)';
+        ctx.font = 'bold 50px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(`${currentCycle}`, canvas.width / 2, canvas.height / 2 + 20);
+        ctx.fillText(`${currentCycle}`, canvas.width / 2, canvas.height / 2 + 15);
     }
 
-    // 50점 이상 보스 스테이지 효과 (Easy/Middle) - 간소화
+    // 50점 보스 효과 간소화
     if (score >= 50 && (currentDifficulty === 'easy' || currentDifficulty === 'middle')) {
-        const glowIntensity = 0.08 + Math.sin(frameNow * 0.003) * 0.04;
-        const bossColor = currentDifficulty === 'easy'
-            ? `rgba(255, 150, 0, ${glowIntensity})`
-            : `rgba(255, 0, 100, ${glowIntensity})`;
-        ctx.fillStyle = bossColor;
+        ctx.fillStyle = currentDifficulty === 'easy' ? 'rgba(255, 150, 0, 0.06)' : 'rgba(255, 0, 100, 0.06)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         // 번개/스파크 효과
@@ -1547,112 +1274,24 @@ function drawPipes() {
 
 function drawPipe(x, y, width, height, isTop, decor) {
     const theme = getCurrentTheme();
-    const themeIndex = (currentLevel - 1) % LEVELS_PER_CYCLE;
 
-    ctx.lineWidth = 3;
+    // 모든 레벨 공통: 단순 사각형 + 캡
+    ctx.fillStyle = theme.pipe;
+    ctx.fillRect(x, y, width, height);
+    ctx.strokeStyle = theme.pipeStroke;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, width, height);
 
-    if (themeIndex === 0) {
-        // Lv.1 - 기본 파이프
-        ctx.fillStyle = theme.pipe;
-        ctx.strokeStyle = theme.pipeStroke;
-        ctx.fillRect(x, y, width, height);
-        ctx.strokeRect(x, y, width, height);
-        const capHeight = 25;
-        const capX = x - 7.5;
-        let capY = isTop ? y + height - capHeight : y;
-        ctx.fillStyle = theme.pipeCap;
-        ctx.fillRect(capX, capY, width + 15, capHeight);
-        ctx.strokeRect(capX, capY, width + 15, capHeight);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-        ctx.fillRect(x + 5, y, 10, height);
+    // 캡
+    const capHeight = 20;
+    const capY = isTop ? y + height - capHeight : y;
+    ctx.fillStyle = theme.pipeCap || theme.pipe;
+    ctx.fillRect(x - 5, capY, width + 10, capHeight);
+    ctx.strokeRect(x - 5, capY, width + 10, capHeight);
 
-    } else if (themeIndex === 1) {
-        // Lv.2 - 나무 기둥 (간소화)
-        ctx.fillStyle = theme.pipe;
-        ctx.strokeStyle = theme.pipeStroke;
-        ctx.fillRect(x, y, width, height);
-        ctx.strokeRect(x, y, width, height);
-        // 나무 무늬 (간격 넓혀서 부하 감소)
-        ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-        for (let i = 0; i < height; i += 40) {
-            ctx.beginPath();
-            ctx.moveTo(x, y + i);
-            ctx.lineTo(x + width, y + i + 3);
-            ctx.stroke();
-        }
-        // 이끼/잎
-        ctx.fillStyle = '#228B22';
-        const leafY = isTop ? y + height : y;
-        for (let i = 0; i < 3; i++) {
-            ctx.beginPath();
-            ctx.arc(x + (i * width/2), leafY, 8, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-    } else if (themeIndex === 2) {
-        // Lv.3 - 빌딩 (미리 계산된 창문 사용)
-        ctx.fillStyle = theme.pipe;
-        ctx.strokeStyle = theme.pipeStroke;
-        ctx.fillRect(x, y, width, height);
-        ctx.strokeRect(x, y, width, height);
-        ctx.fillStyle = '#FFD700';
-        const windowSize = 8;
-        const windows = isTop ? (decor && decor.topWindows) : (decor && decor.bottomWindows);
-        if (windows) {
-            for (let i = 0; i < windows.length; i++) {
-                ctx.fillRect(x + windows[i].wx, y + windows[i].wy, windowSize, windowSize);
-            }
-        }
-
-    } else if (themeIndex === 3) {
-        // Lv.4 - 운석/바위 (간소화: 기본 사각형 + 크레이터만)
-        ctx.fillStyle = theme.pipe;
-        ctx.strokeStyle = theme.pipeStroke;
-        ctx.fillRect(x, y, width, height);
-        ctx.strokeRect(x, y, width, height);
-        // 크레이터 (미리 계산된 위치 사용)
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
-        const craters = isTop ? (decor && decor.topCraters) : (decor && decor.bottomCraters);
-        if (craters) {
-            for (let i = 0; i < craters.length; i++) {
-                ctx.beginPath();
-                ctx.ellipse(x + width/2, y + craters[i], 12, 8, 0, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-
-    } else if (themeIndex === 4) {
-        // Lv.5 - 네온 (shadowBlur 제거로 성능 개선)
-        ctx.fillStyle = theme.pipe;
-        ctx.fillRect(x, y, width, height);
-        // 네온 테두리 (다중 선으로 글로우 표현)
-        ctx.strokeStyle = theme.pipeStroke;
-        ctx.lineWidth = 4;
-        ctx.strokeRect(x, y, width, height);
-        ctx.strokeStyle = theme.pipe;
-        ctx.globalAlpha = 0.3;
-        ctx.lineWidth = 8;
-        ctx.strokeRect(x - 2, y, width + 4, height);
-        ctx.globalAlpha = 1;
-        // 중앙 라인
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(x + width/2, y);
-        ctx.lineTo(x + width/2, y + height);
-        ctx.stroke();
-        // 끝부분 강조
-        const endY = isTop ? y + height : y;
-        ctx.fillStyle = theme.pipeCap;
-        ctx.fillRect(x - 5, endY - 5, width + 10, 10);
-    }
-
-    // 회차별 웅장함 효과 (2회차 이상)
-    if (currentCycle > 1) {
-        ctx.strokeStyle = `rgba(255, 215, 0, ${0.3 + currentCycle * 0.1})`;
-        ctx.lineWidth = currentCycle;
-        ctx.strokeRect(x - 2, y, width + 4, height);
-    }
+    // 하이라이트
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.fillRect(x + 4, y, 8, height);
 }
 
 // 파티클 그리기
