@@ -1042,7 +1042,9 @@ function spawnPipe() {
         gapY: gapY,
         gapSize: currentGap, // 각 파이프마다 갭 저장
         width: pipeConfig.width,
-        passed: false
+        passed: false,
+        // 장식 데이터 미리 계산 (성능 최적화)
+        decorData: generatePipeDecor(pipeConfig.width, gapY, currentGap)
     };
     pipes.push(newPipe);
 
@@ -1500,17 +1502,51 @@ function drawItems() {
 }
 
 // 파이프 그리기
+// 파이프 장식 데이터 미리 생성 (성능 최적화)
+function generatePipeDecor(width, gapY, gapSize) {
+    const topHeight = gapY;
+    const bottomY = gapY + gapSize;
+    const bottomHeight = canvas.height - bottomY;
+
+    // Lv.3 빌딩 창문 패턴
+    const windowSize = 8;
+    const windowGap = 15;
+    const topWindows = [];
+    const bottomWindows = [];
+    for (let wy = 10; wy < topHeight - 10; wy += windowGap) {
+        for (let wx = 8; wx < width - 8; wx += windowGap) {
+            if (Math.random() > 0.3) topWindows.push({ wx, wy });
+        }
+    }
+    for (let wy = 10; wy < bottomHeight - 10; wy += windowGap) {
+        for (let wx = 8; wx < width - 8; wx += windowGap) {
+            if (Math.random() > 0.3) bottomWindows.push({ wx, wy });
+        }
+    }
+
+    // Lv.4 운석 크레이터 위치
+    const topCraters = [];
+    const bottomCraters = [];
+    for (let i = 0; i < 3; i++) {
+        topCraters.push(topHeight * (i + 1) / 4);
+        bottomCraters.push(bottomHeight * (i + 1) / 4);
+    }
+
+    return { topWindows, bottomWindows, topCraters, bottomCraters };
+}
+
 function drawPipes() {
     pipes.forEach(pipe => {
         const gap = pipe.gapSize || pipeConfig.gap;
+        const decor = pipe.decorData;
         // 위쪽 파이프
-        drawPipe(pipe.x, 0, pipe.width, pipe.gapY, true);
+        drawPipe(pipe.x, 0, pipe.width, pipe.gapY, true, decor);
         // 아래쪽 파이프
-        drawPipe(pipe.x, pipe.gapY + gap, pipe.width, canvas.height - pipe.gapY - gap, false);
+        drawPipe(pipe.x, pipe.gapY + gap, pipe.width, canvas.height - pipe.gapY - gap, false, decor);
     });
 }
 
-function drawPipe(x, y, width, height, isTop) {
+function drawPipe(x, y, width, height, isTop, decor) {
     const theme = getCurrentTheme();
     const themeIndex = (currentLevel - 1) % LEVELS_PER_CYCLE;
 
@@ -1522,98 +1558,83 @@ function drawPipe(x, y, width, height, isTop) {
         ctx.strokeStyle = theme.pipeStroke;
         ctx.fillRect(x, y, width, height);
         ctx.strokeRect(x, y, width, height);
-        // 캡
         const capHeight = 25;
         const capX = x - 7.5;
         let capY = isTop ? y + height - capHeight : y;
         ctx.fillStyle = theme.pipeCap;
         ctx.fillRect(capX, capY, width + 15, capHeight);
         ctx.strokeRect(capX, capY, width + 15, capHeight);
-        // 하이라이트
         ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
         ctx.fillRect(x + 5, y, 10, height);
 
     } else if (themeIndex === 1) {
-        // Lv.2 - 나무 기둥
+        // Lv.2 - 나무 기둥 (간소화)
         ctx.fillStyle = theme.pipe;
         ctx.strokeStyle = theme.pipeStroke;
         ctx.fillRect(x, y, width, height);
         ctx.strokeRect(x, y, width, height);
-        // 나무 무늬
+        // 나무 무늬 (간격 넓혀서 부하 감소)
         ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-        for (let i = 0; i < height; i += 20) {
+        for (let i = 0; i < height; i += 40) {
             ctx.beginPath();
             ctx.moveTo(x, y + i);
-            ctx.bezierCurveTo(x + width/3, y + i + 5, x + width*2/3, y + i - 5, x + width, y + i);
+            ctx.lineTo(x + width, y + i + 3);
             ctx.stroke();
         }
         // 이끼/잎
         ctx.fillStyle = '#228B22';
         const leafY = isTop ? y + height : y;
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 3; i++) {
             ctx.beginPath();
-            ctx.arc(x + (i * width/4), leafY, 8, 0, Math.PI * 2);
+            ctx.arc(x + (i * width/2), leafY, 8, 0, Math.PI * 2);
             ctx.fill();
         }
 
     } else if (themeIndex === 2) {
-        // Lv.3 - 빌딩
+        // Lv.3 - 빌딩 (미리 계산된 창문 사용)
         ctx.fillStyle = theme.pipe;
         ctx.strokeStyle = theme.pipeStroke;
         ctx.fillRect(x, y, width, height);
         ctx.strokeRect(x, y, width, height);
-        // 창문
         ctx.fillStyle = '#FFD700';
         const windowSize = 8;
-        const windowGap = 15;
-        for (let wy = y + 10; wy < y + height - 10; wy += windowGap) {
-            for (let wx = x + 8; wx < x + width - 8; wx += windowGap) {
-                if (Math.random() > 0.3) {
-                    ctx.fillRect(wx, wy, windowSize, windowSize);
-                }
+        const windows = isTop ? (decor && decor.topWindows) : (decor && decor.bottomWindows);
+        if (windows) {
+            for (let i = 0; i < windows.length; i++) {
+                ctx.fillRect(x + windows[i].wx, y + windows[i].wy, windowSize, windowSize);
             }
         }
 
     } else if (themeIndex === 3) {
-        // Lv.4 - 운석/바위
+        // Lv.4 - 운석/바위 (간소화: 기본 사각형 + 크레이터만)
         ctx.fillStyle = theme.pipe;
         ctx.strokeStyle = theme.pipeStroke;
-        // 울퉁불퉁한 모양
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        for (let i = 0; i <= height; i += 20) {
-            const offset = Math.sin(i * 0.1) * 8;
-            ctx.lineTo(x + offset, y + i);
-        }
-        ctx.lineTo(x + width, y + height);
-        for (let i = height; i >= 0; i -= 20) {
-            const offset = Math.cos(i * 0.15) * 8;
-            ctx.lineTo(x + width + offset, y + i);
-        }
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-        // 크레이터
+        ctx.fillRect(x, y, width, height);
+        ctx.strokeRect(x, y, width, height);
+        // 크레이터 (미리 계산된 위치 사용)
         ctx.fillStyle = 'rgba(0,0,0,0.3)';
-        for (let i = 0; i < 3; i++) {
-            const craterY = y + (height * (i + 1) / 4);
-            ctx.beginPath();
-            ctx.ellipse(x + width/2, craterY, 12, 8, 0, 0, Math.PI * 2);
-            ctx.fill();
+        const craters = isTop ? (decor && decor.topCraters) : (decor && decor.bottomCraters);
+        if (craters) {
+            for (let i = 0; i < craters.length; i++) {
+                ctx.beginPath();
+                ctx.ellipse(x + width/2, y + craters[i], 12, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
 
     } else if (themeIndex === 4) {
-        // Lv.5 - 네온 레이저
-        // 글로우 효과
-        ctx.shadowColor = theme.pipe;
-        ctx.shadowBlur = 20;
+        // Lv.5 - 네온 (shadowBlur 제거로 성능 개선)
         ctx.fillStyle = theme.pipe;
         ctx.fillRect(x, y, width, height);
-        ctx.shadowBlur = 0;
-        // 네온 테두리
+        // 네온 테두리 (다중 선으로 글로우 표현)
         ctx.strokeStyle = theme.pipeStroke;
         ctx.lineWidth = 4;
         ctx.strokeRect(x, y, width, height);
+        ctx.strokeStyle = theme.pipe;
+        ctx.globalAlpha = 0.3;
+        ctx.lineWidth = 8;
+        ctx.strokeRect(x - 2, y, width + 4, height);
+        ctx.globalAlpha = 1;
         // 중앙 라인
         ctx.strokeStyle = '#fff';
         ctx.lineWidth = 2;
@@ -1624,10 +1645,7 @@ function drawPipe(x, y, width, height, isTop) {
         // 끝부분 강조
         const endY = isTop ? y + height : y;
         ctx.fillStyle = theme.pipeCap;
-        ctx.shadowColor = theme.pipeCap;
-        ctx.shadowBlur = 15;
         ctx.fillRect(x - 5, endY - 5, width + 10, 10);
-        ctx.shadowBlur = 0;
     }
 
     // 회차별 웅장함 효과 (2회차 이상)
@@ -1664,28 +1682,19 @@ function drawCollectibleTokens() {
         ctx.translate(token.x, token.y);
         ctx.scale(pulseScale, pulseScale);
 
-        // 외곽 글로우 (여러 겹)
-        ctx.shadowColor = '#FFD700';
-        ctx.shadowBlur = 30 + Math.sin(token.glow) * 15;
-
-        // 외곽 빛
-        ctx.fillStyle = `rgba(255, 215, 0, ${glowIntensity * 0.3})`;
+        // 외곽 빛 (shadowBlur 제거, 원으로 대체)
+        ctx.fillStyle = `rgba(255, 215, 0, ${glowIntensity * 0.2})`;
         ctx.beginPath();
         ctx.arc(0, 0, token.radius + 15, 0, Math.PI * 2);
         ctx.fill();
 
-        // 중간 빛
-        ctx.fillStyle = `rgba(255, 215, 0, ${glowIntensity * 0.5})`;
+        ctx.fillStyle = `rgba(255, 215, 0, ${glowIntensity * 0.4})`;
         ctx.beginPath();
         ctx.arc(0, 0, token.radius + 8, 0, Math.PI * 2);
         ctx.fill();
 
-        // 토큰 본체
-        const gradient = ctx.createRadialGradient(0, -10, 0, 0, 0, token.radius);
-        gradient.addColorStop(0, '#FFF8DC');
-        gradient.addColorStop(0.5, '#FFD700');
-        gradient.addColorStop(1, '#FFA500');
-        ctx.fillStyle = gradient;
+        // 토큰 본체 (단색으로 변경, gradient 제거)
+        ctx.fillStyle = '#FFD700';
         ctx.beginPath();
         ctx.arc(0, 0, token.radius, 0, Math.PI * 2);
         ctx.fill();
