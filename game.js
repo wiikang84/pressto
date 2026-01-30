@@ -1249,54 +1249,43 @@ function drawBackground() {
         ctx.arc(canvas.width * 0.85, canvas.height * 0.35, 50, 0, Math.PI * 2);
         ctx.fill();
     } else if (themeIndex === 2) {
-        // 밤하늘 - 반짝이는 별
+        // 밤하늘 - 별 (개수 줄임)
         const time = Date.now() * 0.001;
-        for (let i = 0; i < 60; i++) {
+        for (let i = 0; i < 25; i++) {
             const x = (i * 137 + 50) % canvas.width;
             const y = (i * 89 + 30) % canvas.height;
             const size = (i % 3) + 1;
             const twinkle = 0.5 + Math.sin(time * 2 + i) * 0.5;
             ctx.fillStyle = `rgba(255, 255, 255, ${twinkle})`;
-            ctx.beginPath();
-            ctx.arc(x, y, size, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.fillRect(x - size / 2, y - size / 2, size, size);
         }
-        // 달
+        // 달 (shadowBlur 제거)
+        ctx.fillStyle = 'rgba(255, 250, 205, 0.3)';
+        ctx.beginPath();
+        ctx.arc(canvas.width * 0.8, canvas.height * 0.18, 45, 0, Math.PI * 2);
+        ctx.fill();
         ctx.fillStyle = '#FFFACD';
-        ctx.shadowColor = '#FFFACD';
-        ctx.shadowBlur = 20;
         ctx.beginPath();
         ctx.arc(canvas.width * 0.8, canvas.height * 0.18, 35, 0, Math.PI * 2);
         ctx.fill();
-        ctx.shadowBlur = 0;
     } else if (themeIndex === 3) {
-        // 우주 - 별 + 성운
-        const time = Date.now() * 0.0005;
-        // 성운 효과
-        ctx.fillStyle = 'rgba(150, 100, 200, 0.1)';
-        ctx.beginPath();
-        ctx.ellipse(canvas.width * 0.3, canvas.height * 0.4, 150, 80, time, 0, Math.PI * 2);
-        ctx.fill();
+        // 우주 - 별 (개수 줄임, gradient 제거)
         // 별
-        for (let i = 0; i < 100; i++) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        for (let i = 0; i < 40; i++) {
             const x = (i * 137) % canvas.width;
             const y = (i * 89) % canvas.height;
             const size = (i % 2) + 0.5;
-            ctx.fillStyle = `rgba(255, 255, 255, ${0.3 + (i % 7) * 0.1})`;
-            ctx.beginPath();
-            ctx.arc(x, y, size, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.fillRect(x, y, size, size);
         }
-        // 행성
-        const planetGradient = ctx.createRadialGradient(
-            canvas.width * 0.9 - 5, canvas.height * 0.15 - 5, 0,
-            canvas.width * 0.9, canvas.height * 0.15, 30
-        );
-        planetGradient.addColorStop(0, '#C39BD3');
-        planetGradient.addColorStop(1, '#6C3483');
-        ctx.fillStyle = planetGradient;
+        // 행성 (단색)
+        ctx.fillStyle = '#9B59B6';
         ctx.beginPath();
         ctx.arc(canvas.width * 0.9, canvas.height * 0.15, 28, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.beginPath();
+        ctx.arc(canvas.width * 0.9 - 5, canvas.height * 0.15 - 5, 20, 0, Math.PI * 2);
         ctx.fill();
         // 행성 고리
         ctx.strokeStyle = 'rgba(200, 180, 220, 0.6)';
@@ -1305,29 +1294,30 @@ function drawBackground() {
         ctx.ellipse(canvas.width * 0.9, canvas.height * 0.15, 45, 12, -0.3, 0, Math.PI * 2);
         ctx.stroke();
     } else if (themeIndex === 4) {
-        // 네온 시티 - 빌딩 실루엣 + 네온
-        // 빌딩 실루엣
+        // 네온 시티 - 빌딩 (Math.random 제거, 고정 높이)
         ctx.fillStyle = 'rgba(20, 20, 40, 0.8)';
-        for (let i = 0; i < 15; i++) {
+        for (let i = 0; i < 12; i++) {
             const bx = i * (canvas.width / 12);
-            const bh = 50 + Math.random() * 100;
+            const bh = 60 + (i * 37 % 90);
             ctx.fillRect(bx, canvas.height - bh, canvas.width / 15, bh);
         }
         // 네온 라인
         const neonTime = Date.now() * 0.003;
-        ctx.strokeStyle = `rgba(255, 0, 255, ${0.3 + Math.sin(neonTime) * 0.2})`;
+        const neonAlpha1 = 0.3 + Math.sin(neonTime) * 0.2;
+        const neonAlpha2 = 0.3 + Math.cos(neonTime) * 0.2;
+        ctx.strokeStyle = `rgba(255, 0, 255, ${neonAlpha1})`;
         ctx.lineWidth = 2;
-        for (let i = 0; i < 4; i++) {
-            ctx.beginPath();
-            ctx.moveTo(0, canvas.height * (0.3 + i * 0.12));
-            ctx.lineTo(canvas.width, canvas.height * (0.35 + i * 0.12));
-            ctx.stroke();
-        }
-        ctx.strokeStyle = `rgba(0, 255, 255, ${0.3 + Math.cos(neonTime) * 0.2})`;
         for (let i = 0; i < 3; i++) {
             ctx.beginPath();
-            ctx.moveTo(canvas.width * (0.2 + i * 0.3), 0);
-            ctx.lineTo(canvas.width * (0.25 + i * 0.3), canvas.height * 0.6);
+            ctx.moveTo(0, canvas.height * (0.3 + i * 0.15));
+            ctx.lineTo(canvas.width, canvas.height * (0.35 + i * 0.15));
+            ctx.stroke();
+        }
+        ctx.strokeStyle = `rgba(0, 255, 255, ${neonAlpha2})`;
+        for (let i = 0; i < 2; i++) {
+            ctx.beginPath();
+            ctx.moveTo(canvas.width * (0.25 + i * 0.4), 0);
+            ctx.lineTo(canvas.width * (0.3 + i * 0.4), canvas.height * 0.6);
             ctx.stroke();
         }
     }
@@ -1340,22 +1330,13 @@ function drawBackground() {
         ctx.fillText(`${currentCycle}`, canvas.width / 2, canvas.height / 2 + 20);
     }
 
-    // 50점 이상 보스 스테이지 효과 (Easy/Middle)
+    // 50점 이상 보스 스테이지 효과 (Easy/Middle) - 간소화
     if (score >= 50 && (currentDifficulty === 'easy' || currentDifficulty === 'middle')) {
-        // 화면 가장자리 글로우 효과
-        const glowIntensity = 0.15 + Math.sin(Date.now() * 0.003) * 0.05;
-        const bossGradient = ctx.createRadialGradient(
-            canvas.width / 2, canvas.height / 2, canvas.height * 0.3,
-            canvas.width / 2, canvas.height / 2, canvas.height
-        );
-        if (currentDifficulty === 'easy') {
-            bossGradient.addColorStop(0, 'rgba(255, 215, 0, 0)');
-            bossGradient.addColorStop(1, `rgba(255, 150, 0, ${glowIntensity})`);
-        } else {
-            bossGradient.addColorStop(0, 'rgba(255, 50, 50, 0)');
-            bossGradient.addColorStop(1, `rgba(255, 0, 100, ${glowIntensity})`);
-        }
-        ctx.fillStyle = bossGradient;
+        const glowIntensity = 0.08 + Math.sin(Date.now() * 0.003) * 0.04;
+        const bossColor = currentDifficulty === 'easy'
+            ? `rgba(255, 150, 0, ${glowIntensity})`
+            : `rgba(255, 0, 100, ${glowIntensity})`;
+        ctx.fillStyle = bossColor;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         // 번개/스파크 효과
@@ -1435,24 +1416,24 @@ function drawPlayer() {
     const isReviveInvincible = reviveInvincibleTime > Date.now() || practiceMode;
     const isItemInvincible = activeItem === ItemType.SHIELD;
 
-    // 아이템 효과별 글로우
+    // 아이템 효과별 글로우 (shadowBlur 대신 테두리 원으로 표현)
     if (gameState === GameState.PLAYING) {
+        let glowColor = null;
         if (isItemInvincible) {
-            // 무적 아이템: 파란 글로우
-            ctx.shadowColor = '#4FC3F7';
-            ctx.shadowBlur = 25 + Math.sin(Date.now() * 0.015) * 15;
+            glowColor = 'rgba(79, 195, 247, 0.4)';
         } else if (activeItem === ItemType.SHRINK) {
-            // 축소: 초록 글로우
-            ctx.shadowColor = '#66BB6A';
-            ctx.shadowBlur = 15 + Math.sin(Date.now() * 0.01) * 8;
+            glowColor = 'rgba(102, 187, 106, 0.4)';
         } else if (activeItem === ItemType.ENLARGE) {
-            // 확대: 빨간 글로우
-            ctx.shadowColor = '#EF5350';
-            ctx.shadowBlur = 20 + Math.sin(Date.now() * 0.012) * 10;
+            glowColor = 'rgba(239, 83, 80, 0.4)';
         } else if (isReviveInvincible) {
-            // 연습/부활 무적: 시안 글로우
-            ctx.shadowColor = '#00FFFF';
-            ctx.shadowBlur = 20 + Math.sin(Date.now() * 0.01) * 10;
+            glowColor = 'rgba(0, 255, 255, 0.35)';
+        }
+        if (glowColor) {
+            const glowSize = player.width * playerSizeMultiplier * 0.8 + Math.sin(Date.now() * 0.01) * 5;
+            ctx.fillStyle = glowColor;
+            ctx.beginPath();
+            ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
+            ctx.fill();
         }
     }
 
@@ -1460,8 +1441,6 @@ function drawPlayer() {
     const size = player.width / 2;
     const wingUp = currentBirdFrame === 0 || isPressed;
     drawCharacter(ctx, 0, 0, size, currentCharacter, wingUp);
-
-    ctx.shadowBlur = 0;
     ctx.restore();
 }
 
@@ -1477,9 +1456,12 @@ function drawItems() {
         ctx.translate(item.x, item.y);
         ctx.scale(pulseScale, pulseScale);
 
-        // 글로우 효과
-        ctx.shadowColor = config.glowColor;
-        ctx.shadowBlur = 15 + Math.sin(item.pulse * 2) * 8;
+        // 글로우 효과 (shadowBlur 대신 외곽 원)
+        const glowAlpha = 0.25 + Math.sin(item.pulse * 2) * 0.1;
+        ctx.fillStyle = config.isDebuff ? `rgba(255, 100, 100, ${glowAlpha})` : `rgba(100, 200, 255, ${glowAlpha})`;
+        ctx.beginPath();
+        ctx.arc(0, 0, item.radius + 6, 0, Math.PI * 2);
+        ctx.fill();
 
         // 배경 원
         ctx.beginPath();
@@ -1491,7 +1473,6 @@ function drawItems() {
         ctx.stroke();
 
         // 이모지
-        ctx.shadowBlur = 0;
         ctx.font = 'bold 24px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
