@@ -849,6 +849,10 @@ let levelUpDisplay = 0; // 레벨업 표시 타이머
 let currentCycle = 1; // 회차 (레벨 5 이후 증가)
 const LEVELS_PER_CYCLE = 5;
 
+// 배경 gradient 캐시 (성능 최적화)
+let cachedBgGradient = null;
+let cachedBgLevel = -1;
+
 // 아이템 시스템
 const ItemType = {
     SHIELD: 'shield',     // 무적
@@ -1203,10 +1207,14 @@ function createParticles(x, y, count, color) {
 // 배경 그리기
 function drawBackground() {
     const theme = getCurrentTheme();
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    gradient.addColorStop(0, theme.sky[0]);
-    gradient.addColorStop(1, theme.sky[1]);
-    ctx.fillStyle = gradient;
+    // gradient 캐싱 (레벨 변경 시에만 재생성)
+    if (cachedBgLevel !== currentLevel || !cachedBgGradient) {
+        cachedBgGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        cachedBgGradient.addColorStop(0, theme.sky[0]);
+        cachedBgGradient.addColorStop(1, theme.sky[1]);
+        cachedBgLevel = currentLevel;
+    }
+    ctx.fillStyle = cachedBgGradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // 패럴랙스 구름 업데이트 및 그리기
@@ -1250,7 +1258,7 @@ function drawBackground() {
         ctx.fill();
     } else if (themeIndex === 2) {
         // 밤하늘 - 별 (개수 줄임)
-        const time = Date.now() * 0.001;
+        const time = frameNow * 0.001;
         for (let i = 0; i < 25; i++) {
             const x = (i * 137 + 50) % canvas.width;
             const y = (i * 89 + 30) % canvas.height;
@@ -1302,7 +1310,7 @@ function drawBackground() {
             ctx.fillRect(bx, canvas.height - bh, canvas.width / 15, bh);
         }
         // 네온 라인
-        const neonTime = Date.now() * 0.003;
+        const neonTime = frameNow * 0.003;
         const neonAlpha1 = 0.3 + Math.sin(neonTime) * 0.2;
         const neonAlpha2 = 0.3 + Math.cos(neonTime) * 0.2;
         ctx.strokeStyle = `rgba(255, 0, 255, ${neonAlpha1})`;
@@ -1332,7 +1340,7 @@ function drawBackground() {
 
     // 50점 이상 보스 스테이지 효과 (Easy/Middle) - 간소화
     if (score >= 50 && (currentDifficulty === 'easy' || currentDifficulty === 'middle')) {
-        const glowIntensity = 0.08 + Math.sin(Date.now() * 0.003) * 0.04;
+        const glowIntensity = 0.08 + Math.sin(frameNow * 0.003) * 0.04;
         const bossColor = currentDifficulty === 'easy'
             ? `rgba(255, 150, 0, ${glowIntensity})`
             : `rgba(255, 0, 100, ${glowIntensity})`;
@@ -1384,11 +1392,9 @@ function drawParallaxClouds() {
 }
 
 function drawCloud(x, y, size) {
-    ctx.beginPath();
-    ctx.arc(x, y, size, 0, Math.PI * 2);
-    ctx.arc(x + size * 0.8, y - size * 0.2, size * 0.7, 0, Math.PI * 2);
-    ctx.arc(x + size * 1.4, y, size * 0.8, 0, Math.PI * 2);
-    ctx.fill();
+    const h = size * 0.8;
+    ctx.fillRect(x - size, y - h/2, size * 2.8, h);
+    ctx.fillRect(x - size * 0.5, y - h, size * 1.5, h * 0.6);
 }
 
 // 플레이어 그리기 (캐릭터 시스템)
@@ -1413,7 +1419,7 @@ function drawPlayer() {
     }
 
     // 무적 상태 체크 (연습/부활/아이템)
-    const isReviveInvincible = reviveInvincibleTime > Date.now() || practiceMode;
+    const isReviveInvincible = reviveInvincibleTime > frameNow || practiceMode;
     const isItemInvincible = activeItem === ItemType.SHIELD;
 
     // 아이템 효과별 글로우 (shadowBlur 대신 테두리 원으로 표현)
@@ -1429,7 +1435,7 @@ function drawPlayer() {
             glowColor = 'rgba(0, 255, 255, 0.35)';
         }
         if (glowColor) {
-            const glowSize = player.width * playerSizeMultiplier * 0.8 + Math.sin(Date.now() * 0.01) * 5;
+            const glowSize = player.width * playerSizeMultiplier * 0.8 + Math.sin(frameNow * 0.01) * 5;
             ctx.fillStyle = glowColor;
             ctx.beginPath();
             ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
@@ -1472,11 +1478,23 @@ function drawItems() {
         ctx.lineWidth = 3;
         ctx.stroke();
 
-        // 이모지
-        ctx.font = 'bold 24px Arial';
+        // 아이콘 (이모지 대신 도형으로 성능 최적화)
+        ctx.fillStyle = '#fff';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(config.emoji, 0, 0);
+        if (item.type === ItemType.SHIELD) {
+            // 방패 도형
+            ctx.font = 'bold 18px sans-serif';
+            ctx.fillText('S', 0, 1);
+        } else if (item.type === ItemType.SHRINK) {
+            // 축소 화살표
+            ctx.font = 'bold 20px sans-serif';
+            ctx.fillText('▼', 0, 1);
+        } else if (item.type === ItemType.ENLARGE) {
+            // 확대 화살표
+            ctx.font = 'bold 20px sans-serif';
+            ctx.fillText('▲', 0, 1);
+        }
 
         ctx.restore();
     });
@@ -1674,7 +1692,7 @@ function drawCollectibleTokens() {
         ctx.arc(0, 0, token.radius + 8, 0, Math.PI * 2);
         ctx.fill();
 
-        // 토큰 본체 (단색으로 변경, gradient 제거)
+        // 토큰 본체 (단색)
         ctx.fillStyle = '#FFD700';
         ctx.beginPath();
         ctx.arc(0, 0, token.radius, 0, Math.PI * 2);
@@ -1692,11 +1710,12 @@ function drawCollectibleTokens() {
         ctx.arc(0, 0, token.radius - 6, 0, Math.PI * 2);
         ctx.stroke();
 
-        // 코인 이모지
-        ctx.font = `bold ${token.radius * 1.2}px "Segoe UI"`;
+        // T 마크 (이모지 대신 도형)
+        ctx.fillStyle = '#B8860B';
+        ctx.font = `bold ${token.radius}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('🪙', 0, 0);
+        ctx.fillText('T', 0, 1);
 
         ctx.restore();
     });
@@ -2087,7 +2106,7 @@ function resumeGame() {
 
 // 연습 모드 UI 그리기
 function drawPracticeUI() {
-    const now = Date.now();
+    const now = frameNow;
     const settings = difficultySettings[currentDifficulty];
     const isReviveInvincible = reviveInvincibleTime > now;
 
@@ -2249,7 +2268,7 @@ function drawItemUI() {
     if (!activeItem || gameState !== GameState.PLAYING) return;
 
     const config = itemConfig[activeItem];
-    const now = Date.now();
+    const now = frameNow;
     const remaining = Math.max(0, activeItemEndTime - now);
     const progress = remaining / config.duration;
 
@@ -2268,11 +2287,11 @@ function drawItemUI() {
     ctx.lineWidth = 2;
     ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
 
-    // 이모지와 이름
-    ctx.font = 'bold 16px Arial';
+    // 아이템 이름
+    ctx.font = 'bold 14px sans-serif';
     ctx.fillStyle = '#fff';
     ctx.textAlign = 'center';
-    ctx.fillText(config.emoji + ' ' + config.name, boxX + boxWidth/2, boxY + 20);
+    ctx.fillText(config.name, boxX + boxWidth/2, boxY + 20);
 
     // 남은 시간 바
     const barWidth = boxWidth - 10;
@@ -2286,7 +2305,11 @@ function drawItemUI() {
 }
 
 // 렌더링
+// 프레임 타임스탬프 (render 내에서 Date.now() 중복 호출 방지)
+let frameNow = 0;
+
 function render() {
+    frameNow = Date.now();
     drawBackground();
     drawPipes();
     drawItems();
