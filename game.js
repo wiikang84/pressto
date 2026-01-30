@@ -324,10 +324,6 @@ const REVIVE_INVINCIBLE_DURATION = 3000; // 3초 무적
 let lastTokenScore = 0; // 마지막 토큰 획득 점수
 let tokenDisplay_timer = 0; // 토큰 획득 표시 타이머
 
-// 수집용 토큰 아이템
-let collectibleTokens = [];
-let lastTokenLevel = 0; // 마지막 토큰 생성 레벨
-
 // 플레이어 스프라이트 로드 (애니메이션)
 const birdSprites = [];
 let birdSpritesLoaded = 0;
@@ -376,32 +372,29 @@ document.addEventListener('touchstart', initAudio, { once: true });
 document.addEventListener('click', initAudio, { once: true });
 
 // 바람 소리 생성 (장애물 통과 시)
+// 바람 소리 버퍼 프리캐시 (매번 생성 방지)
+let cachedWindBuffer = null;
+
 function createWindSound(duration = 0.15, volume = 0.2) {
     const ctx = getAudioContext();
     if (!ctx) return;
-    const bufferSize = ctx.sampleRate * duration;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
 
-    for (let i = 0; i < bufferSize; i++) {
-        const t = i / bufferSize;
-        const envelope = Math.sin(t * Math.PI); // 부드러운 페이드 인/아웃
-        data[i] = (Math.random() * 2 - 1) * envelope * 0.3;
+    // 버퍼를 한 번만 생성
+    if (!cachedWindBuffer) {
+        const bufferSize = ctx.sampleRate * duration;
+        cachedWindBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = cachedWindBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            const t = i / bufferSize;
+            data[i] = (Math.random() * 2 - 1) * Math.sin(t * Math.PI) * 0.3;
+        }
     }
 
     const source = ctx.createBufferSource();
-    source.buffer = buffer;
-
-    // 로우패스 필터로 부드러운 바람 소리
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 800;
-
+    source.buffer = cachedWindBuffer;
     const gainNode = ctx.createGain();
     gainNode.gain.value = volume;
-
-    source.connect(filter);
-    filter.connect(gainNode);
+    source.connect(gainNode);
     gainNode.connect(ctx.destination);
     source.start();
 }
@@ -479,38 +472,32 @@ function createJumpSound() {
     osc.stop(ctx.currentTime + 0.15);
 }
 
-// 충돌 소리 (짧은 충격음)
+// 충돌 소리 (짧은 충격음) - 버퍼 프리캐시
+let cachedHitBuffer = null;
+
 function createHitSound() {
     const ctx = getAudioContext();
     if (!ctx) return;
 
-    // 노이즈 버스트
-    const bufferSize = ctx.sampleRate * 0.1;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-
-    for (let i = 0; i < bufferSize; i++) {
-        const t = i / bufferSize;
-        const envelope = Math.exp(-t * 15);
-        data[i] = (Math.random() * 2 - 1) * envelope;
+    if (!cachedHitBuffer) {
+        const bufferSize = ctx.sampleRate * 0.1;
+        cachedHitBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = cachedHitBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            const t = i / bufferSize;
+            data[i] = (Math.random() * 2 - 1) * Math.exp(-t * 15);
+        }
     }
 
     const source = ctx.createBufferSource();
-    source.buffer = buffer;
-
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 500;
-
+    source.buffer = cachedHitBuffer;
     const gainNode = ctx.createGain();
     gainNode.gain.value = 0.3;
-
-    source.connect(filter);
-    filter.connect(gainNode);
+    source.connect(gainNode);
     gainNode.connect(ctx.destination);
     source.start();
 
-    // 저음 펑 소리 추가
+    // 저음 펑 소리
     const osc = ctx.createOscillator();
     const oscGain = ctx.createGain();
     osc.type = 'sine';
@@ -793,7 +780,6 @@ function resetGame() {
     score = 0;
     pipes = [];
     particles = [];
-    collectibleTokens = [];
     items = [];
     activeItem = null;
     activeItemEndTime = 0;
@@ -836,9 +822,7 @@ function spawnPipe() {
         gapY: gapY,
         gapSize: currentGap, // 각 파이프마다 갭 저장
         width: pipeConfig.width,
-        passed: false,
-        // 장식 데이터 미리 계산 (성능 최적화)
-        decorData: generatePipeDecor(pipeConfig.width, gapY, currentGap)
+        passed: false
     };
     pipes.push(newPipe);
 
@@ -937,46 +921,6 @@ function collectItem(item) {
 
     // 파티클 효과
     createParticles(item.x, item.y, 15, config.color);
-}
-
-// 수집용 토큰 생성 (5레벨마다)
-function spawnCollectibleToken() {
-    const settings = difficultySettings[currentDifficulty];
-
-    // 난이도별 토큰 위치 결정
-    let tokenY;
-    const safeMargin = 80; // 화면 가장자리 여백
-
-    if (currentDifficulty === 'easy') {
-        // Easy: 화면 중앙 근처 (쉬운 위치)
-        const centerY = canvas.height / 2;
-        const easyRange = canvas.height * 0.2; // 중앙 ±20%
-        tokenY = centerY + (Math.random() - 0.5) * easyRange;
-    } else if (currentDifficulty === 'middle') {
-        // Middle: 중앙에서 약간 벗어난 위치
-        const centerY = canvas.height / 2;
-        const offset = (Math.random() > 0.5 ? 1 : -1) * canvas.height * 0.25;
-        tokenY = centerY + offset + (Math.random() - 0.5) * canvas.height * 0.15;
-    } else {
-        // Hard: 상단 또는 하단 가장자리 근처 (어려운 위치)
-        if (Math.random() > 0.5) {
-            tokenY = safeMargin + Math.random() * canvas.height * 0.15; // 상단
-        } else {
-            tokenY = canvas.height - safeMargin - Math.random() * canvas.height * 0.15; // 하단
-        }
-    }
-
-    // 토큰 위치가 화면 안에 있도록 보정
-    tokenY = Math.max(safeMargin, Math.min(canvas.height - safeMargin, tokenY));
-
-    collectibleTokens.push({
-        x: canvas.width + 40,
-        y: tokenY,
-        radius: 35, // 더 크게
-        collected: false,
-        glow: 0, // 반짝임 효과용
-        pulse: 0 // 펄스 효과용
-    });
 }
 
 // 파티클 생성
@@ -1091,11 +1035,11 @@ function drawBackground() {
         }
     }
 
-    // 크레딧 표시
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.font = '12px "Press Start 2P", sans-serif';
+    // 크레딧 표시 (가벼운 시스템 폰트)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.font = '11px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('made by 빛나아빠', canvas.width / 2, canvas.height - 15);
+    ctx.fillText('made by DY', canvas.width / 2, canvas.height - 10);
     ctx.textAlign = 'left';
 }
 
@@ -1205,22 +1149,35 @@ function drawItems() {
         ctx.lineWidth = 3;
         ctx.stroke();
 
-        // 아이콘 (이모지 대신 도형으로 성능 최적화)
+        // 아이콘 (순수 도형으로 성능 최적화 - fillText 제거)
         ctx.fillStyle = '#fff';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
         if (item.type === ItemType.SHIELD) {
             // 방패 도형
-            ctx.font = 'bold 18px sans-serif';
-            ctx.fillText('S', 0, 1);
+            ctx.beginPath();
+            ctx.moveTo(0, -8);
+            ctx.lineTo(8, -4);
+            ctx.lineTo(8, 4);
+            ctx.lineTo(0, 10);
+            ctx.lineTo(-8, 4);
+            ctx.lineTo(-8, -4);
+            ctx.closePath();
+            ctx.fill();
         } else if (item.type === ItemType.SHRINK) {
-            // 축소 화살표
-            ctx.font = 'bold 20px sans-serif';
-            ctx.fillText('▼', 0, 1);
+            // 아래 화살표 도형
+            ctx.beginPath();
+            ctx.moveTo(0, 10);
+            ctx.lineTo(-8, -4);
+            ctx.lineTo(8, -4);
+            ctx.closePath();
+            ctx.fill();
         } else if (item.type === ItemType.ENLARGE) {
-            // 확대 화살표
-            ctx.font = 'bold 20px sans-serif';
-            ctx.fillText('▲', 0, 1);
+            // 위 화살표 도형
+            ctx.beginPath();
+            ctx.moveTo(0, -10);
+            ctx.lineTo(8, 4);
+            ctx.lineTo(-8, 4);
+            ctx.closePath();
+            ctx.fill();
         }
 
         ctx.restore();
@@ -1228,51 +1185,17 @@ function drawItems() {
 }
 
 // 파이프 그리기
-// 파이프 장식 데이터 미리 생성 (성능 최적화)
-function generatePipeDecor(width, gapY, gapSize) {
-    const topHeight = gapY;
-    const bottomY = gapY + gapSize;
-    const bottomHeight = canvas.height - bottomY;
-
-    // Lv.3 빌딩 창문 패턴
-    const windowSize = 8;
-    const windowGap = 15;
-    const topWindows = [];
-    const bottomWindows = [];
-    for (let wy = 10; wy < topHeight - 10; wy += windowGap) {
-        for (let wx = 8; wx < width - 8; wx += windowGap) {
-            if (Math.random() > 0.3) topWindows.push({ wx, wy });
-        }
-    }
-    for (let wy = 10; wy < bottomHeight - 10; wy += windowGap) {
-        for (let wx = 8; wx < width - 8; wx += windowGap) {
-            if (Math.random() > 0.3) bottomWindows.push({ wx, wy });
-        }
-    }
-
-    // Lv.4 운석 크레이터 위치
-    const topCraters = [];
-    const bottomCraters = [];
-    for (let i = 0; i < 3; i++) {
-        topCraters.push(topHeight * (i + 1) / 4);
-        bottomCraters.push(bottomHeight * (i + 1) / 4);
-    }
-
-    return { topWindows, bottomWindows, topCraters, bottomCraters };
-}
-
 function drawPipes() {
     pipes.forEach(pipe => {
         const gap = pipe.gapSize || pipeConfig.gap;
-        const decor = pipe.decorData;
         // 위쪽 파이프
-        drawPipe(pipe.x, 0, pipe.width, pipe.gapY, true, decor);
+        drawPipe(pipe.x, 0, pipe.width, pipe.gapY, true);
         // 아래쪽 파이프
-        drawPipe(pipe.x, pipe.gapY + gap, pipe.width, canvas.height - pipe.gapY - gap, false, decor);
+        drawPipe(pipe.x, pipe.gapY + gap, pipe.width, canvas.height - pipe.gapY - gap, false);
     });
 }
 
-function drawPipe(x, y, width, height, isTop, decor) {
+function drawPipe(x, y, width, height, isTop) {
     const theme = getCurrentTheme();
 
     // 모든 레벨 공통: 단순 사각형 + 캡
@@ -1304,60 +1227,6 @@ function drawParticles() {
         ctx.fill();
     });
     ctx.globalAlpha = 1;
-}
-
-// 수집용 토큰 그리기
-function drawCollectibleTokens() {
-    collectibleTokens.forEach(token => {
-        if (token.collected) return;
-
-        token.glow = (token.glow + 0.08) % (Math.PI * 2);
-        token.pulse = (token.pulse + 0.1) % (Math.PI * 2);
-        const glowIntensity = 0.6 + Math.sin(token.glow) * 0.4;
-        const pulseScale = 1 + Math.sin(token.pulse) * 0.1;
-
-        ctx.save();
-        ctx.translate(token.x, token.y);
-        ctx.scale(pulseScale, pulseScale);
-
-        // 외곽 빛 (shadowBlur 제거, 원으로 대체)
-        ctx.fillStyle = `rgba(255, 215, 0, ${glowIntensity * 0.2})`;
-        ctx.beginPath();
-        ctx.arc(0, 0, token.radius + 15, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = `rgba(255, 215, 0, ${glowIntensity * 0.4})`;
-        ctx.beginPath();
-        ctx.arc(0, 0, token.radius + 8, 0, Math.PI * 2);
-        ctx.fill();
-
-        // 토큰 본체 (단색)
-        ctx.fillStyle = '#FFD700';
-        ctx.beginPath();
-        ctx.arc(0, 0, token.radius, 0, Math.PI * 2);
-        ctx.fill();
-
-        // 토큰 테두리
-        ctx.strokeStyle = '#FF8C00';
-        ctx.lineWidth = 4;
-        ctx.stroke();
-
-        // 내부 테두리
-        ctx.strokeStyle = '#FFE4B5';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(0, 0, token.radius - 6, 0, Math.PI * 2);
-        ctx.stroke();
-
-        // T 마크 (이모지 대신 도형)
-        ctx.fillStyle = '#B8860B';
-        ctx.font = `bold ${token.radius}px sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('T', 0, 1);
-
-        ctx.restore();
-    });
 }
 
 // 충돌 감지 (히트박스 여유있게)
@@ -1406,7 +1275,7 @@ function checkCollision() {
 function update(deltaTime) {
     if (gameState !== GameState.PLAYING) return;
 
-    const now = Date.now();
+    const now = frameNow;
     const timeSinceStart = now - gameStartTime;
     const settings = difficultySettings[currentDifficulty];
 
@@ -1493,15 +1362,20 @@ function update(deltaTime) {
         }
     });
 
-    // 화면 밖 파이프 제거
-    pipes = pipes.filter(pipe => pipe.x + pipe.width > 0);
+    // 화면 밖 파이프 제거 (in-place, GC 방지)
+    let wi = 0;
+    for (let ri = 0; ri < pipes.length; ri++) {
+        if (pipes[ri].x + pipes[ri].width > 0) pipes[wi++] = pipes[ri];
+    }
+    pipes.length = wi;
 
     // 아이템 업데이트
     const currentPlayerWidth = player.width * playerSizeMultiplier;
     const currentPlayerHeight = player.height * playerSizeMultiplier;
 
-    items.forEach(item => {
-        if (item.collected) return;
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.collected) continue;
 
         // 아이템 이동
         item.x -= pipeConfig.speed * speedMultiplier;
@@ -1518,18 +1392,26 @@ function update(deltaTime) {
             item.collected = true;
             collectItem(item);
         }
-    });
+    }
 
-    // 화면 밖 아이템 제거
-    items = items.filter(item => item.x + item.radius > 0 && !item.collected);
+    // 화면 밖 아이템 제거 (in-place)
+    wi = 0;
+    for (let ri = 0; ri < items.length; ri++) {
+        if (items[ri].x + items[ri].radius > 0 && !items[ri].collected) items[wi++] = items[ri];
+    }
+    items.length = wi;
 
-    // 파티클 업데이트
-    particles.forEach(p => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life -= 0.02;
-    });
-    particles = particles.filter(p => p.life > 0);
+    // 파티클 업데이트 (in-place)
+    for (let i = 0; i < particles.length; i++) {
+        particles[i].x += particles[i].vx;
+        particles[i].y += particles[i].vy;
+        particles[i].life -= 0.02;
+    }
+    wi = 0;
+    for (let ri = 0; ri < particles.length; ri++) {
+        if (particles[ri].life > 0) particles[wi++] = particles[ri];
+    }
+    particles.length = wi;
 
     // 충돌 감지 (연습 모드, 부활 무적, 아이템 무적 중에는 죽지 않음)
     if (checkCollision()) {
@@ -1819,7 +1701,7 @@ function drawLevelUI() {
     if (currentLevel >= 51) {
         ctx.fillStyle = '#FF4444';
         ctx.font = 'bold 12px "Segoe UI"';
-        ctx.fillText(`🔥 Hell 모드`, levelBoxX + 5, 25);
+        ctx.fillText('Hell', levelBoxX + 5, 25);
     } else if (currentCycle > 1) {
         ctx.fillStyle = '#FFD700';
         ctx.font = 'bold 12px "Segoe UI"';
@@ -1871,7 +1753,7 @@ function drawLevelUI() {
             ctx.fillStyle = '#FF4444';
             ctx.font = 'bold 60px "Segoe UI"';
             ctx.textAlign = 'center';
-            ctx.fillText('🔥 Hell 모드 🔥', 0, -20);
+            ctx.fillText('HELL MODE', 0, -20);
 
             ctx.fillStyle = '#FF6666';
             ctx.font = 'bold 24px "Segoe UI"';
@@ -1948,7 +1830,6 @@ function drawItemUI() {
 let frameNow = 0;
 
 function render() {
-    frameNow = Date.now();
     drawBackground();
     drawPipes();
     drawItems();
@@ -1965,6 +1846,7 @@ let lastTime = 0;
 function gameLoop(timestamp) {
     const deltaTime = timestamp - lastTime;
     lastTime = timestamp;
+    frameNow = Date.now();
 
     update(deltaTime);
     render();
