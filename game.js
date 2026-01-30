@@ -77,48 +77,48 @@ if (fullscreenBtn) {
 const characters = {
     ppukku: {
         id: 'ppukku',
-        name: '빛나',
-        desc: '귀여운 기본 새',
+        name: '골디',
+        desc: '반짝이는 황금새',
         price: 0,
         unlocked: true,
         colors: { body: '#FFD93D', bodyStroke: '#F4A900', wing: '#FF9500', beak: '#FF6B35', eye: '#000' }
     },
     ppuang: {
         id: 'ppuang',
-        name: '빈나',
-        desc: '화난 새',
+        name: '레디',
+        desc: '불꽃같은 열정새',
         price: 0,
         unlocked: true,
         colors: { body: '#FF6B6B', bodyStroke: '#CC5555', wing: '#FF4444', beak: '#FF8800', eye: '#000' }
     },
     ppuing: {
         id: 'ppuing',
-        name: '빙나',
-        desc: '애교쟁이',
+        name: '핑키',
+        desc: '사랑스런 분홍새',
         price: 0,
         unlocked: true,
         colors: { body: '#FFB6C1', bodyStroke: '#FF69B4', wing: '#FF1493', beak: '#FF6B35', eye: '#000' }
     },
     ppuul: {
         id: 'ppuul',
-        name: '빗나',
-        desc: '쿨한 새',
+        name: '블루',
+        desc: '시원한 하늘새',
         price: 0,
         unlocked: true,
         colors: { body: '#4FC3F7', bodyStroke: '#0288D1', wing: '#03A9F4', beak: '#FF9800', eye: '#000' }
     },
     ppuseul: {
         id: 'ppuseul',
-        name: '빔나',
-        desc: '슬픈 새',
+        name: '퍼피',
+        desc: '몽환의 보라새',
         price: 0,
         unlocked: true,
         colors: { body: '#B39DDB', bodyStroke: '#7E57C2', wing: '#9575CD', beak: '#FFAB91', eye: '#000' }
     },
     ppuban: {
         id: 'ppuban',
-        name: '빈na',
-        desc: '신난 새',
+        name: '그리니',
+        desc: '싱그러운 초록새',
         price: 0,
         unlocked: true,
         colors: { body: '#81C784', bodyStroke: '#4CAF50', wing: '#66BB6A', beak: '#FFCC02', eye: '#000' }
