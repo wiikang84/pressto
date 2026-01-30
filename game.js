@@ -1935,9 +1935,26 @@ function gameOver() {
         }
     }
 
-    // Firestore에 점수 저장
-    if (typeof saveScore === 'function') {
-        saveScore(score, currentDifficulty, currentLevel);
+    // 랭킹 피드백 표시
+    const rankingFeedback = document.getElementById('ranking-feedback');
+    if (rankingFeedback) {
+        if (typeof currentUser !== 'undefined' && currentUser) {
+            rankingFeedback.textContent = '🏆 랭킹 등록 중...';
+            rankingFeedback.className = 'ranking-feedback saving';
+            // Firestore에 점수 저장
+            if (typeof saveScore === 'function') {
+                saveScore(score, currentDifficulty, currentLevel).then(() => {
+                    rankingFeedback.textContent = '🏆 랭킹 등록 완료!';
+                    rankingFeedback.className = 'ranking-feedback saved';
+                }).catch(() => {
+                    rankingFeedback.textContent = '랭킹 등록 실패';
+                    rankingFeedback.className = 'ranking-feedback failed';
+                });
+            }
+        } else {
+            rankingFeedback.textContent = '로그인하면 랭킹에 등록됩니다';
+            rankingFeedback.className = 'ranking-feedback guest';
+        }
     }
 
     // 파티클 효과

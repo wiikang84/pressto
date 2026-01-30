@@ -494,6 +494,47 @@ body {
     color: #FFD700;
 }
 
+/* ========== 랭킹 피드백 ========== */
+.ranking-feedback {
+    font-size: clamp(8px, 2vw, 12px);
+    padding: clamp(6px, 1.5vh, 10px) clamp(12px, 3vw, 20px);
+    border-radius: 20px;
+    animation: feedbackPop 0.3s ease-out;
+}
+
+.ranking-feedback.hidden {
+    display: none;
+}
+
+.ranking-feedback.saving {
+    background: rgba(255, 193, 7, 0.2);
+    color: #FFD700;
+    border: 1px solid rgba(255, 193, 7, 0.4);
+}
+
+.ranking-feedback.saved {
+    background: rgba(76, 175, 80, 0.2);
+    color: #81C784;
+    border: 1px solid rgba(76, 175, 80, 0.4);
+}
+
+.ranking-feedback.failed {
+    background: rgba(244, 67, 54, 0.2);
+    color: #EF9A9A;
+    border: 1px solid rgba(244, 67, 54, 0.4);
+}
+
+.ranking-feedback.guest {
+    background: rgba(255, 255, 255, 0.1);
+    color: #aaa;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@keyframes feedbackPop {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
 .revive-section {
     display: flex;
     flex-direction: column;

@@ -132,6 +132,14 @@ function renderRanking(scores) {
     });
 
     rankingList.innerHTML = html;
+
+    // 내 순위로 자동 스크롤
+    const myRow = rankingList.querySelector('.rank-me');
+    if (myRow) {
+        setTimeout(() => {
+            myRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+    }
 }
 
 // HTML 이스케이프
