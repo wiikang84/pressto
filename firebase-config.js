@@ -76,20 +76,27 @@ function saveScore(score, difficulty, level) {
 
 // 랭킹 조회
 function fetchRanking(difficulty, period) {
-    let query = db.collection('scores')
-        .where('difficulty', '==', difficulty)
-        .orderBy('score', 'desc')
-        .limit(50);
+    let query;
 
-    // 기간 필터
-    if (period === 'weekly') {
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        query = query.where('timestamp', '>=', weekAgo);
-    } else if (period === 'monthly') {
-        const monthAgo = new Date();
-        monthAgo.setMonth(monthAgo.getMonth() - 1);
-        query = query.where('timestamp', '>=', monthAgo);
+    if (period === 'weekly' || period === 'monthly') {
+        // 기간 필터: range 필터(timestamp) → 해당 필드로 먼저 orderBy 필수
+        const cutoff = new Date();
+        if (period === 'weekly') {
+            cutoff.setDate(cutoff.getDate() - 7);
+        } else {
+            cutoff.setMonth(cutoff.getMonth() - 1);
+        }
+        query = db.collection('scores')
+            .where('difficulty', '==', difficulty)
+            .where('timestamp', '>=', cutoff)
+            .orderBy('timestamp', 'desc')
+            .limit(100);
+    } else {
+        // 역대: equality + orderBy score
+        query = db.collection('scores')
+            .where('difficulty', '==', difficulty)
+            .orderBy('score', 'desc')
+            .limit(50);
     }
 
     return query.get().then((snapshot) => {
@@ -97,6 +104,11 @@ function fetchRanking(difficulty, period) {
         snapshot.forEach((doc) => {
             scores.push({ id: doc.id, ...doc.data() });
         });
+        // 주간/월간은 timestamp순으로 가져온 뒤 score순 재정렬
+        if (period === 'weekly' || period === 'monthly') {
+            scores.sort((a, b) => b.score - a.score);
+            return scores.slice(0, 50);
+        }
         return scores;
     }).catch((error) => {
         console.error('랭킹 조회 실패:', error);
