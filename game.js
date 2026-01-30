@@ -1945,6 +1945,11 @@ function gameOver() {
         }
     }
 
+    // Firestore에 점수 저장
+    if (typeof saveScore === 'function') {
+        saveScore(score, currentDifficulty, currentLevel);
+    }
+
     // 파티클 효과
     createParticles(player.x, player.y, 20, '#FF6B6B');
 }
@@ -2460,6 +2465,101 @@ if (characterBackBtn) {
         startScreen.classList.remove('hidden');
     });
 }
+
+// 구글 로그인 버튼
+const googleLoginBtn = document.getElementById('google-login-btn');
+if (googleLoginBtn) {
+    googleLoginBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (typeof googleLogin === 'function') googleLogin();
+    });
+}
+
+// 로그아웃 버튼
+const logoutBtn = document.getElementById('logout-btn');
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (typeof googleLogout === 'function') googleLogout();
+    });
+}
+
+// 랭킹 화면
+const rankingScreen = document.getElementById('ranking-screen');
+const rankingBackBtn = document.getElementById('ranking-back-btn');
+const rankingBtn = document.getElementById('ranking-btn');
+const startRankingBtn = document.getElementById('start-ranking-btn');
+
+let rankingReturnTo = 'start'; // 랭킹에서 돌아갈 화면
+let selectedRankDiff = 'easy';
+let selectedRankPeriod = 'weekly';
+
+function openRanking(returnTo) {
+    rankingReturnTo = returnTo;
+    if (returnTo === 'start') startScreen.classList.add('hidden');
+    else if (returnTo === 'gameover') gameoverScreen.classList.add('hidden');
+    rankingScreen.classList.remove('hidden');
+    loadRanking();
+}
+
+function closeRanking() {
+    rankingScreen.classList.add('hidden');
+    if (rankingReturnTo === 'start') startScreen.classList.remove('hidden');
+    else if (rankingReturnTo === 'gameover') gameoverScreen.classList.remove('hidden');
+}
+
+function loadRanking() {
+    const rankingList = document.getElementById('ranking-list');
+    if (rankingList) rankingList.innerHTML = '<p class="ranking-loading">로딩 중...</p>';
+    if (typeof fetchRanking === 'function') {
+        fetchRanking(selectedRankDiff, selectedRankPeriod).then((scores) => {
+            if (typeof renderRanking === 'function') renderRanking(scores);
+        });
+    }
+}
+
+if (rankingBtn) {
+    rankingBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openRanking('gameover');
+    });
+}
+
+if (startRankingBtn) {
+    startRankingBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openRanking('start');
+    });
+}
+
+if (rankingBackBtn) {
+    rankingBackBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeRanking();
+    });
+}
+
+// 난이도 탭
+document.querySelectorAll('.rank-diff-tab').forEach(tab => {
+    tab.addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.rank-diff-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        selectedRankDiff = tab.dataset.diff;
+        loadRanking();
+    });
+});
+
+// 기간 탭
+document.querySelectorAll('.rank-period-tab').forEach(tab => {
+    tab.addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.rank-period-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        selectedRankPeriod = tab.dataset.period;
+        loadRanking();
+    });
+});
 
 // 초기화
 resetPlayer();

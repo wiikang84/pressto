@@ -14,6 +14,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <!-- Firebase SDK (compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
     <div id="game-container">
@@ -32,7 +36,19 @@
             <div id="start-screen" class="screen hidden">
                 <div class="menu-header">
                     <h2 class="menu-title">Pressto</h2>
-                    <div class="token-info">🪙 <span id="start-tokens">0</span></div>
+                    <div class="menu-header-right">
+                        <div class="token-info">🪙 <span id="start-tokens">0</span></div>
+                        <div id="login-area">
+                            <button id="google-login-btn" class="google-login-btn">
+                                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G" width="18" height="18">
+                                <span>로그인</span>
+                            </button>
+                        </div>
+                        <div id="user-profile" class="user-profile hidden">
+                            <img id="user-photo" class="user-photo" src="" alt="">
+                            <button id="logout-btn" class="logout-btn">✕</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="menu-content">
                     <button id="character-btn" class="character-select-btn">
@@ -44,6 +60,7 @@
                         <span>떼면 ⬇️</span>
                     </div>
                 </div>
+                <button id="start-ranking-btn" class="start-ranking-btn">🏆 랭킹 보기</button>
                 <p class="select-difficulty">난이도 선택</p>
                 <div class="difficulty-buttons">
                     <button class="diff-btn easy" data-difficulty="easy">
@@ -85,8 +102,28 @@
                         🔄 되살리기 (1토큰)
                     </button>
                 </div>
+                <button id="ranking-btn" class="ranking-btn">🏆 랭킹</button>
                 <button id="restart-btn">🔁 다시 하기</button>
                 <button id="home-btn">🏠 처음으로</button>
+            </div>
+            <div id="ranking-screen" class="screen hidden">
+                <div class="ranking-header">
+                    <button id="ranking-back-btn" class="ranking-back-btn">←</button>
+                    <h2>🏆 랭킹</h2>
+                </div>
+                <div class="ranking-difficulty-tabs">
+                    <button class="rank-diff-tab active" data-diff="easy">🌱 Easy</button>
+                    <button class="rank-diff-tab" data-diff="middle">⚡ Middle</button>
+                    <button class="rank-diff-tab" data-diff="hard">🔥 Hard</button>
+                </div>
+                <div class="ranking-period-tabs">
+                    <button class="rank-period-tab active" data-period="weekly">주간</button>
+                    <button class="rank-period-tab" data-period="monthly">월간</button>
+                    <button class="rank-period-tab" data-period="alltime">역대</button>
+                </div>
+                <div id="ranking-list" class="ranking-list">
+                    <p class="ranking-loading">로딩 중...</p>
+                </div>
             </div>
         </div>
     </div>
@@ -96,6 +133,7 @@
             <p>화면을 가로로 돌려주세요</p>
         </div>
     </div>
+    <script src="firebase-config.js"></script>
     <script src="game.js"></script>
 </body>
 </html>

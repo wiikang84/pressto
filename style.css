@@ -171,6 +171,67 @@ body {
     flex-shrink: 0;
 }
 
+.menu-header-right {
+    display: flex;
+    align-items: center;
+    gap: clamp(6px, 2vw, 12px);
+}
+
+/* ========== 구글 로그인 / 프로필 ========== */
+.google-login-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    border: 2px solid #ddd;
+    border-radius: 20px;
+    padding: clamp(4px, 1vh, 8px) clamp(10px, 2.5vw, 16px);
+    font-family: 'Press Start 2P', sans-serif;
+    font-size: clamp(6px, 1.5vw, 9px);
+    color: #333;
+    cursor: pointer;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+}
+
+.google-login-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 0 0 rgba(0,0,0,0.2);
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(0,0,0,0.5);
+    border-radius: 20px;
+    padding: 3px;
+    border: 2px solid #4CAF50;
+}
+
+.user-profile.hidden {
+    display: none;
+}
+
+.user-photo {
+    width: clamp(24px, 5vw, 32px);
+    height: clamp(24px, 5vw, 32px);
+    border-radius: 50%;
+}
+
+.logout-btn {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    border-radius: 50%;
+    width: clamp(20px, 4vw, 26px);
+    height: clamp(20px, 4vw, 26px);
+    color: #fff;
+    font-size: clamp(8px, 2vw, 12px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .menu-title {
     font-size: clamp(14px, 4vw, 24px);
     color: #FFD700;
@@ -612,4 +673,192 @@ body {
     #game-container {
         display: block;
     }
+}
+
+/* ========== 랭킹 버튼 ========== */
+.ranking-btn {
+    font-family: 'Press Start 2P', sans-serif;
+    padding: clamp(10px, 2.5vh, 18px) clamp(15px, 4vw, 30px);
+    font-size: clamp(8px, 2vw, 12px);
+    border: 3px solid #F9A825;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.1s;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.5);
+    background: linear-gradient(180deg, #FFB300 0%, #F9A825 100%);
+}
+
+.ranking-btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.5);
+}
+
+.start-ranking-btn {
+    font-family: 'Press Start 2P', sans-serif;
+    padding: clamp(8px, 2vh, 14px) clamp(12px, 3vw, 24px);
+    font-size: clamp(7px, 1.8vw, 11px);
+    border: 2px solid #F9A825;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.1s;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.4);
+    background: linear-gradient(180deg, #FFB300 0%, #F9A825 100%);
+    flex-shrink: 0;
+}
+
+.start-ranking-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.4);
+}
+
+/* ========== 랭킹 화면 ========== */
+#ranking-screen {
+    background: rgba(0, 0, 0, 0.95);
+    justify-content: flex-start;
+    padding: 2vh 3vw;
+    gap: 1.5vh;
+    z-index: 200;
+}
+
+.ranking-header {
+    display: flex;
+    align-items: center;
+    gap: clamp(10px, 3vw, 20px);
+    width: 100%;
+    flex-shrink: 0;
+}
+
+.ranking-header h2 {
+    font-size: clamp(14px, 4vw, 24px);
+    color: #FFD700;
+    text-shadow: 2px 2px 0 #000;
+}
+
+.ranking-back-btn {
+    background: rgba(255,255,255,0.15);
+    border: 2px solid #888;
+    border-radius: 8px;
+    color: #fff;
+    font-size: clamp(14px, 3.5vw, 22px);
+    padding: 6px 12px;
+    cursor: pointer;
+    font-family: 'Press Start 2P', sans-serif;
+}
+
+.ranking-back-btn:active {
+    background: rgba(255,255,255,0.3);
+}
+
+.ranking-difficulty-tabs,
+.ranking-period-tabs {
+    display: flex;
+    gap: clamp(4px, 1vw, 8px);
+    width: 100%;
+    flex-shrink: 0;
+}
+
+.rank-diff-tab,
+.rank-period-tab {
+    flex: 1;
+    padding: clamp(6px, 1.5vh, 10px) 0;
+    font-family: 'Press Start 2P', sans-serif;
+    font-size: clamp(6px, 1.5vw, 10px);
+    border: 2px solid #555;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.1);
+    color: #aaa;
+    cursor: pointer;
+}
+
+.rank-diff-tab.active {
+    background: #4CAF50;
+    border-color: #388E3C;
+    color: #fff;
+}
+
+.rank-diff-tab[data-diff="middle"].active {
+    background: #FF9800;
+    border-color: #E65100;
+}
+
+.rank-diff-tab[data-diff="hard"].active {
+    background: #f44336;
+    border-color: #B71C1C;
+}
+
+.rank-period-tab.active {
+    background: #6366f1;
+    border-color: #4338ca;
+    color: #fff;
+}
+
+.ranking-list {
+    flex: 1;
+    overflow-y: auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ranking-loading,
+.ranking-empty {
+    font-size: clamp(8px, 2vw, 12px);
+    color: #888;
+    text-align: center;
+    padding: 20px;
+}
+
+.rank-row {
+    display: flex;
+    align-items: center;
+    gap: clamp(6px, 1.5vw, 10px);
+    background: rgba(255,255,255,0.05);
+    padding: clamp(6px, 1.5vh, 10px) clamp(8px, 2vw, 14px);
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.rank-row.rank-me {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: #6366f1;
+}
+
+.rank-num {
+    font-size: clamp(10px, 2.5vw, 16px);
+    min-width: clamp(24px, 6vw, 36px);
+    text-align: center;
+}
+
+.rank-photo {
+    width: clamp(22px, 5vw, 30px);
+    height: clamp(22px, 5vw, 30px);
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.rank-photo-default {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #555;
+    color: #aaa;
+    font-size: clamp(8px, 2vw, 12px);
+}
+
+.rank-name {
+    flex: 1;
+    font-size: clamp(7px, 1.8vw, 11px);
+    color: #ddd;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rank-score {
+    font-size: clamp(10px, 2.5vw, 14px);
+    color: #FFD700;
+    font-weight: bold;
 }
