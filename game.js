@@ -594,6 +594,10 @@ function initClouds() {
 const MAX_CANVAS_WIDTH = 960;
 const MAX_CANVAS_HEIGHT = 540;
 
+// 배경 gradient 캐시 (성능 최적화) — resizeCanvas에서 사용하므로 먼저 선언
+let cachedBgGradient = null;
+let cachedBgLevel = -1;
+
 function resizeCanvas() {
     const container = document.getElementById('game-container');
     let w = container.clientWidth;
@@ -639,10 +643,6 @@ let levelUpDisplay = 0; // 레벨업 표시 타이머
 // 레벨 테마 시스템
 let currentCycle = 1; // 회차 (레벨 5 이후 증가)
 const LEVELS_PER_CYCLE = 5;
-
-// 배경 gradient 캐시 (성능 최적화)
-let cachedBgGradient = null;
-let cachedBgLevel = -1;
 
 // 아이템 시스템
 const ItemType = {
