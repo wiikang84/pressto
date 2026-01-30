@@ -142,19 +142,6 @@ const characters = {
 let currentCharacter = localStorage.getItem('pressto_character') || 'ppukku';
 let unlockedCharacters = Object.keys(characters); // 모든 캐릭터 해금
 
-// 캐릭터 잠금 해제
-function unlockCharacter(charId) {
-    const char = characters[charId];
-    if (!char || unlockedCharacters.includes(charId)) return false;
-    if (tokens < char.price) return false;
-
-    tokens -= char.price;
-    saveTokens();
-    unlockedCharacters.push(charId);
-    localStorage.setItem('pressto_unlocked_chars', JSON.stringify(unlockedCharacters));
-    return true;
-}
-
 // 캐릭터 선택
 function selectCharacter(charId) {
     if (!unlockedCharacters.includes(charId)) return false;
@@ -165,7 +152,7 @@ function selectCharacter(charId) {
 }
 
 // 캐릭터 그리기 함수 - 새 형태 (머리+몸통+꼬리)
-function drawCharacter(ctx, x, y, size, charId, isPressed = false, isAngry = false) {
+function drawCharacter(ctx, x, y, size, charId, isPressed = false) {
     const char = characters[charId] || characters.ppukku;
     const colors = char.colors;
 
@@ -337,23 +324,10 @@ const REVIVE_INVINCIBLE_DURATION = 3000; // 3초 무적
 let lastTokenScore = 0; // 마지막 토큰 획득 점수
 let tokenDisplay_timer = 0; // 토큰 획득 표시 타이머
 
-// 플레이어 스프라이트 로드 (애니메이션)
-const birdSprites = [];
-let birdSpritesLoaded = 0;
-const BIRD_FRAME_COUNT = 2;
-
-for (let i = 1; i <= BIRD_FRAME_COUNT; i++) {
-    const img = new Image();
-    img.src = `assets/sprites/transparent PNG/fly/frame-${i}.png`;
-    img.onload = () => {
-        birdSpritesLoaded++;
-    };
-    birdSprites.push(img);
-}
-
 let currentBirdFrame = 0;
 let birdAnimationTimer = 0;
 const BIRD_ANIMATION_SPEED = 8; // 프레임당 틱
+const BIRD_FRAME_COUNT = 2;
 
 // Web Audio API 사운드 시스템
 let audioContext = null;
@@ -413,23 +387,27 @@ function createWindSound(duration = 0.15, volume = 0.2) {
 }
 
 // 레벨업 바람 + 차임 소리
+let cachedLevelUpBuffer = null;
+
 function createLevelUpSound() {
     const ctx = getAudioContext();
     if (!ctx) return;
 
-    // 상승하는 바람 소리
-    const bufferSize = ctx.sampleRate * 0.5;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
+    // 상승하는 바람 소리 (버퍼 캐싱)
+    if (!cachedLevelUpBuffer) {
+        const bufferSize = ctx.sampleRate * 0.5;
+        cachedLevelUpBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = cachedLevelUpBuffer.getChannelData(0);
 
-    for (let i = 0; i < bufferSize; i++) {
-        const t = i / bufferSize;
-        const envelope = Math.sin(t * Math.PI) * (1 - t * 0.5);
-        data[i] = (Math.random() * 2 - 1) * envelope * 0.2;
+        for (let i = 0; i < bufferSize; i++) {
+            const t = i / bufferSize;
+            const envelope = Math.sin(t * Math.PI) * (1 - t * 0.5);
+            data[i] = (Math.random() * 2 - 1) * envelope * 0.2;
+        }
     }
 
     const noiseSource = ctx.createBufferSource();
-    noiseSource.buffer = buffer;
+    noiseSource.buffer = cachedLevelUpBuffer;
 
     const filter = ctx.createBiquadFilter();
     filter.type = 'bandpass';
@@ -620,7 +598,11 @@ function resizeCanvas() {
     cachedBgLevel = -1; // gradient 캐시 초기화
 }
 resizeCanvas();
-window.addEventListener('resize', resizeCanvas);
+let resizeTimeout;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(resizeCanvas, 150);
+});
 
 // 게임 상태
 const GameState = {
@@ -638,7 +620,7 @@ let isPressed = false;
 let gameStartTime = 0;
 let practiceMode = true; // 연습 모드
 let currentLevel = 1;
-let levelUpDisplay = 0; // 레벨업 표시 타이머
+let levelUpDisplay = 0; // 레벨업 표시 타이머 (ms)
 
 // 레벨 테마 시스템
 let currentCycle = 1; // 회차 (레벨 5 이후 증가)
@@ -775,12 +757,6 @@ function getCurrentTheme() {
     const themeIndex = ((currentLevel - 1) % LEVELS_PER_CYCLE);
     return levelThemes[themeIndex];
 }
-
-// 플레이어 색상
-const playerColors = {
-    player: '#FFD700',
-    playerStroke: '#FFA500'
-};
 
 // 플레이어 초기화
 function resetPlayer() {
@@ -955,8 +931,7 @@ function createParticles(x, y, count, color) {
 }
 
 // 배경 그리기
-function drawBackground() {
-    const theme = getCurrentTheme();
+function drawBackground(theme) {
     // gradient 캐싱 (레벨 변경 시에만 재생성)
     if (cachedBgLevel !== currentLevel || !cachedBgGradient) {
         cachedBgGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
@@ -1018,13 +993,14 @@ function drawBackground() {
 
 // 패럴랙스 구름 업데이트
 function updateParallaxClouds() {
-    clouds.forEach(cloud => {
+    for (let i = 0; i < clouds.length; i++) {
+        const cloud = clouds[i];
         cloud.x -= cloud.speed * pipeConfig.speed;
         if (cloud.x + cloud.size * 2 < 0) {
             cloud.x = canvas.width + cloud.size;
             cloud.y = Math.random() * canvas.height * 0.5;
         }
-    });
+    }
 }
 
 // 패럴랙스 구름 그리기
@@ -1052,15 +1028,6 @@ function drawPlayer() {
     // 기울기 (속도에 따라)
     const rotation = Math.min(Math.max(player.velocity * 3, -30), 30) * Math.PI / 180;
     ctx.rotate(rotation);
-
-    // 애니메이션 업데이트 (날개 펄럭임)
-    if (gameState === GameState.PLAYING) {
-        birdAnimationTimer++;
-        if (birdAnimationTimer >= BIRD_ANIMATION_SPEED) {
-            birdAnimationTimer = 0;
-            currentBirdFrame = (currentBirdFrame + 1) % BIRD_FRAME_COUNT;
-        }
-    }
 
     // 무적 상태 체크 (연습/부활/아이템)
     const isReviveInvincible = reviveInvincibleTime > frameNow || practiceMode;
@@ -1141,9 +1108,8 @@ function drawItems() {
 // 파이프 그리기 (getCurrentTheme 1회 호출, stroke 제거)
 const PIPE_HIGHLIGHT = 'rgba(255,255,255,0.15)';
 
-function drawPipes() {
+function drawPipes(theme) {
     if (pipes.length === 0) return;
-    const theme = getCurrentTheme();
     const pipeColor = theme.pipe;
     const capColor = theme.pipeCap || pipeColor;
 
@@ -1230,6 +1196,8 @@ function checkCollision() {
 function update(deltaTime) {
     if (gameState !== GameState.PLAYING) return;
 
+    const dt = Math.min(deltaTime, 33.33) / 16.667; // normalize to 60fps, cap at 2x
+
     const now = frameNow;
     const timeSinceStart = now - gameStartTime;
     const settings = difficultySettings[currentDifficulty];
@@ -1251,28 +1219,35 @@ function update(deltaTime) {
     // 아이템 무적 체크 (무적 아이템 또는 부활 무적)
     const isItemInvincible = activeItem === ItemType.SHIELD;
 
-    // 토큰 표시 타이머
+    // 토큰 표시 타이머 (ms 기반)
     if (tokenDisplay_timer > 0) {
-        tokenDisplay_timer--;
+        tokenDisplay_timer -= deltaTime;
+    }
+
+    // 새 애니메이션 업데이트 (날개 펄럭임) - moved from render
+    birdAnimationTimer += dt;
+    if (birdAnimationTimer >= BIRD_ANIMATION_SPEED) {
+        birdAnimationTimer = 0;
+        currentBirdFrame = (currentBirdFrame + 1) % BIRD_FRAME_COUNT;
     }
 
     // 플레이어 물리
     if (isPressed) {
-        player.velocity += player.lift * 0.3; // 부드러운 상승
+        player.velocity += player.lift * 0.3 * dt; // 부드러운 상승
         if (player.velocity < player.lift) {
             player.velocity = player.lift;
         }
     } else {
         // 연습 모드에서는 중력 약하게
         if (practiceMode) {
-            player.velocity += player.gravity * 0.5;
+            player.velocity += player.gravity * 0.5 * dt;
         } else {
-            player.velocity += player.gravity;
+            player.velocity += player.gravity * dt;
         }
     }
 
     player.velocity = Math.min(Math.max(player.velocity, -player.maxVelocity), player.maxVelocity);
-    player.y += player.velocity;
+    player.y += player.velocity * dt;
 
     // 장애물 생성 (연습 모드에서도 생성하지만 간격 넓게)
     const spawnInterval = practiceMode ? pipeConfig.spawnInterval * 1.5 : pipeConfig.spawnInterval;
@@ -1284,8 +1259,9 @@ function update(deltaTime) {
     // 장애물 이동 및 점수 (레벨에 따라 속도 변화)
     const speedMultiplier = 1 + (currentLevel - 1) * 0.05; // 레벨당 5% 속도 증가
 
-    pipes.forEach(pipe => {
-        pipe.x -= pipeConfig.speed * speedMultiplier;
+    for (let i = 0; i < pipes.length; i++) {
+        const pipe = pipes[i];
+        pipe.x -= pipeConfig.speed * speedMultiplier * dt;
 
         // 점수 획득
         if (!pipe.passed && pipe.x + pipe.width < player.x) {
@@ -1310,12 +1286,12 @@ function update(deltaTime) {
                 currentLevel = newLevel;
                 // 5레벨마다 회차 증가
                 currentCycle = Math.floor((currentLevel - 1) / LEVELS_PER_CYCLE) + 1;
-                levelUpDisplay = 120; // 2초간 표시 (60fps 기준)
+                levelUpDisplay = 2000; // 2초간 표시 (ms)
                 createParticles(canvas.width/2, canvas.height/2, 20 + currentCycle * 5, '#FF69B4');
                 playSound('levelup');
             }
         }
-    });
+    }
 
     // 화면 밖 파이프 제거 (in-place, GC 방지)
     let wi = 0;
@@ -1333,7 +1309,7 @@ function update(deltaTime) {
         if (item.collected) continue;
 
         // 아이템 이동
-        item.x -= pipeConfig.speed * speedMultiplier;
+        item.x -= pipeConfig.speed * speedMultiplier * dt;
 
         // 펄스 애니메이션
         item.pulse = (item.pulse + 0.1) % (Math.PI * 2);
@@ -1359,9 +1335,9 @@ function update(deltaTime) {
 
     // 파티클 업데이트 (in-place)
     for (let i = 0; i < particles.length; i++) {
-        particles[i].x += particles[i].vx;
-        particles[i].y += particles[i].vy;
-        particles[i].life -= 0.02;
+        particles[i].x += particles[i].vx * dt;
+        particles[i].y += particles[i].vy * dt;
+        particles[i].life -= 0.02 * dt;
     }
     wi = 0;
     for (let ri = 0; ri < particles.length; ri++) {
@@ -1390,6 +1366,7 @@ function update(deltaTime) {
 
 // 게임 오버
 function gameOver() {
+    needsRender = true;
     gameState = GameState.GAMEOVER;
     playSound('hit');
 
@@ -1460,6 +1437,7 @@ function gameOver() {
 
 // 게임 시작
 function startGame(difficulty) {
+    needsRender = true;
     if (difficulty) {
         currentDifficulty = difficulty;
         applyDifficulty(difficulty);
@@ -1504,7 +1482,7 @@ function saveTokens() {
 function earnToken() {
     tokens++;
     saveTokens();
-    tokenDisplay_timer = 90; // 1.5초간 표시
+    tokenDisplay_timer = 1500; // 1.5초간 표시 (ms)
     createParticles(canvas.width - 60, 50, 10, '#FFD700');
     playSound('token');
 }
@@ -1513,6 +1491,7 @@ function earnToken() {
 function revive() {
     if (tokens <= 0) return false;
 
+    needsRender = true;
     tokens--;
     saveTokens();
 
@@ -1548,6 +1527,7 @@ function restartGame() {
 
 // 처음으로 돌아가기
 function goToHome() {
+    needsRender = true;
     gameState = GameState.READY;
     resetGame();
     gameoverScreen.classList.add('hidden');
@@ -1564,6 +1544,7 @@ function goToHome() {
 let pausedTime = 0; // 일시정지된 시간 저장
 function pauseGame() {
     if (gameState !== GameState.PLAYING) return;
+    needsRender = true;
     gameState = GameState.PAUSED;
     pausedTime = Date.now();
     pauseScreen.classList.remove('hidden');
@@ -1573,6 +1554,7 @@ function pauseGame() {
 // 게임 재개
 function resumeGame() {
     if (gameState !== GameState.PAUSED) return;
+    needsRender = true;
     // 일시정지 동안의 시간 보정
     const pauseDuration = Date.now() - pausedTime;
     gameStartTime += pauseDuration;
@@ -1593,12 +1575,11 @@ let _lastHudTheme = '';
 let _lastHudPractice = '';
 let _lastHudItem = '';
 
-function updateHUD() {
+function updateHUD(theme) {
     if (gameState !== GameState.PLAYING) return;
 
     const now = frameNow;
     const settings = difficultySettings[currentDifficulty];
-    const theme = getCurrentTheme();
 
     // 레벨 (변경 시에만 DOM 업데이트)
     if (_lastHudLevel !== currentLevel) {
@@ -1657,10 +1638,9 @@ function updateHUD() {
         }
     }
 
-    // 레벨업 표시
+    // 레벨업 표시 (ms 기반)
     if (levelUpDisplay > 0) {
-        levelUpDisplay--;
-        if (levelUpDisplay === 119) {
+        if (levelUpDisplay >= 1950) {
             // 레벨업 시작 시 1회만 DOM 업데이트
             const isNewCycle = (currentLevel - 1) % LEVELS_PER_CYCLE === 0 && currentLevel > 1;
             const isHellMode = currentLevel === 51;
@@ -1675,16 +1655,16 @@ function updateHUD() {
                 hudLevelup.className = 'hud-levelup';
             }
         }
-        hudLevelup.style.opacity = Math.min(levelUpDisplay / 60, 1);
-        if (levelUpDisplay === 0) {
+        hudLevelup.style.opacity = Math.min(levelUpDisplay / 1000, 1);
+        if (levelUpDisplay <= 0) {
             hudLevelup.className = 'hud-levelup hidden';
         }
     }
 
-    // 토큰 획득 표시
+    // 토큰 획득 표시 (ms 기반)
     if (tokenDisplay_timer > 0) {
         hudTokenEarn.className = 'hud-token-earn';
-        hudTokenEarn.style.opacity = tokenDisplay_timer / 90;
+        hudTokenEarn.style.opacity = tokenDisplay_timer / 1500;
     } else {
         if (hudTokenEarn.className !== 'hud-token-earn hidden') {
             hudTokenEarn.className = 'hud-token-earn hidden';
@@ -1717,24 +1697,34 @@ function updateHUD() {
 let frameNow = 0;
 
 function render() {
-    drawBackground();
-    drawPipes();
+    const frameTheme = getCurrentTheme();
+    drawBackground(frameTheme);
+    drawPipes(frameTheme);
     drawItems();
     drawPlayer();
     drawParticles();
     // UI는 전부 HTML DOM (Canvas fillText 완전 제거)
-    updateHUD();
+    updateHUD(frameTheme);
 }
 
 // 게임 루프
 let lastTime = 0;
+let needsRender = true; // flag to request a render
+let lastGameState = null;
+
 function gameLoop(timestamp) {
     const deltaTime = timestamp - lastTime;
     lastTime = timestamp;
     frameNow = Date.now();
 
-    update(deltaTime);
-    render();
+    if (gameState === GameState.PLAYING) {
+        update(deltaTime);
+        render();
+    } else if (gameState !== lastGameState || needsRender) {
+        render();
+        needsRender = false;
+    }
+    lastGameState = gameState;
 
     requestAnimationFrame(gameLoop);
 }
@@ -1783,6 +1773,7 @@ canvas.addEventListener('touchend', (e) => {
     e.preventDefault();
     handleRelease();
 });
+canvas.addEventListener('touchcancel', () => { isPressed = false; });
 
 // 시작 화면에서는 난이도 버튼으로만 게임 시작 (다른 영역 터치 무시)
 
@@ -1860,15 +1851,9 @@ function requestFullscreen() {
     }
 }
 
-// 난이도 버튼 이벤트
+// 난이도 버튼 이벤트 (click only, no touchend to prevent double-fire)
 document.querySelectorAll('.diff-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const difficulty = btn.dataset.difficulty;
-        startGame(difficulty);
-    });
-    btn.addEventListener('touchend', (e) => {
-        e.preventDefault();
         e.stopPropagation();
         const difficulty = btn.dataset.difficulty;
         startGame(difficulty);

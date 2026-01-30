@@ -9,20 +9,19 @@
     <meta name="theme-color" content="#000000">
     <link rel="manifest" href="manifest.json">
     <title>Pressto - 눌러또</title>
-    <!-- Google Fonts - Press Start 2P (Pixel Font) -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <!-- Firebase SDK (compat) -->
-    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <!-- Preload critical scripts -->
+    <link rel="preload" href="game.js" as="script">
+    <link rel="preload" href="firebase-config.js" as="script">
 </head>
 <body>
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
-        <!-- Game HUD (Canvas fillText 대체 → HTML DOM) -->
+        <!-- Game HUD (HTML DOM) -->
         <div id="game-hud" class="game-hud hidden">
             <div id="hud-level" class="hud-level">Lv.1</div>
             <div id="hud-cycle" class="hud-cycle hidden"></div>
@@ -55,12 +54,12 @@
                         <div class="token-info">🪙 <span id="start-tokens">0</span></div>
                         <div id="login-area">
                             <button id="google-login-btn" class="google-login-btn">
-                                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G" width="18" height="18">
+                                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" width="18" height="18">
                                 <span>로그인</span>
                             </button>
                         </div>
                         <div id="user-profile" class="user-profile hidden">
-                            <img id="user-photo" class="user-photo" src="" alt="">
+                            <img id="user-photo" class="user-photo" alt="">
                             <button id="logout-btn" class="logout-btn">✕</button>
                         </div>
                     </div>
@@ -94,9 +93,7 @@
             </div>
             <div id="character-screen" class="screen hidden">
                 <h2>캐릭터 선택</h2>
-                <div class="character-grid" id="character-grid">
-                    <!-- 캐릭터들이 JS로 생성됨 -->
-                </div>
+                <div class="character-grid" id="character-grid"></div>
                 <button id="character-back-btn" class="pause-menu-btn">← 돌아가기</button>
             </div>
             <div id="pause-screen" class="screen hidden">
@@ -114,9 +111,7 @@
                 <div id="ranking-feedback" class="ranking-feedback hidden"></div>
                 <div class="revive-section">
                     <p class="token-count">🪙 <span id="gameover-tokens">0</span></p>
-                    <button id="revive-btn" class="revive-btn">
-                        🔄 되살리기 (1토큰)
-                    </button>
+                    <button id="revive-btn" class="revive-btn">🔄 되살리기 (1토큰)</button>
                 </div>
                 <button id="ranking-btn" class="ranking-btn">🏆 랭킹 보기</button>
                 <button id="restart-btn">🔁 다시 하기</button>
@@ -149,7 +144,11 @@
             <p>화면을 가로로 돌려주세요</p>
         </div>
     </div>
-    <script src="firebase-config.js"></script>
-    <script src="game.js"></script>
+    <!-- Firebase SDK (deferred to not block rendering) -->
+    <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script defer src="firebase-config.js"></script>
+    <script defer src="game.js"></script>
 </body>
 </html>
