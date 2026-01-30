@@ -35,6 +35,162 @@ body {
     image-rendering: pixelated;
 }
 
+/* ========== Game HUD (Canvas fillText 대체) ========== */
+.game-hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    font-family: 'Segoe UI', sans-serif;
+}
+.game-hud.hidden { display: none; }
+.hud-level {
+    position: absolute;
+    top: 16px;
+    left: 85px;
+    background: rgba(0,0,0,0.5);
+    color: #fff;
+    font-size: 18px;
+    font-weight: bold;
+    padding: 6px 14px;
+    border-radius: 4px;
+    min-width: 80px;
+}
+.hud-cycle {
+    position: absolute;
+    top: 12px;
+    left: 85px;
+    color: #FFD700;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 2px 8px;
+}
+.hud-cycle.hidden { display: none; }
+.hud-cycle.hell { color: #FF4444; }
+.hud-diff {
+    position: absolute;
+    top: 12px;
+    right: 10px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: bold;
+    padding: 4px 14px;
+    border-radius: 4px;
+    border: 2px solid rgba(255,255,255,0.5);
+}
+.hud-diff.easy { background: #4CAF50; }
+.hud-diff.middle { background: #FF9800; }
+.hud-diff.hard { background: #f44336; }
+.hud-theme {
+    position: absolute;
+    top: 46px;
+    right: 10px;
+    background: rgba(0,0,0,0.5);
+    color: #aaa;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    text-align: right;
+}
+.hud-practice {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.4);
+    border: 2px solid #FFD700;
+    color: #FFD700;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 8px 18px;
+    border-radius: 6px;
+    text-align: center;
+    white-space: nowrap;
+}
+.hud-practice.hidden { display: none; }
+.hud-practice.revive {
+    border-color: #E91E63;
+    background: rgba(156,39,176,0.5);
+    color: #fff;
+}
+.hud-levelup {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #FF69B4;
+    font-size: 42px;
+    font-weight: bold;
+    text-align: center;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+.hud-levelup.hidden { display: none; }
+.hud-levelup .sub {
+    display: block;
+    font-size: 18px;
+    color: #FFD700;
+    margin-top: 6px;
+}
+.hud-levelup.hell { color: #FF4444; }
+.hud-levelup.cycle { color: #FFD700; }
+.hud-token-earn {
+    position: absolute;
+    top: 35%;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #FFD700;
+    font-size: 30px;
+    font-weight: bold;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    transition: opacity 0.3s;
+}
+.hud-token-earn.hidden { display: none; }
+.hud-item {
+    position: absolute;
+    bottom: 12px;
+    right: 10px;
+    background: rgba(50,150,200,0.8);
+    color: #fff;
+    font-size: 13px;
+    font-weight: bold;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 2px solid #4FC3F7;
+    min-width: 80px;
+    text-align: center;
+}
+.hud-item.hidden { display: none; }
+.hud-item.debuff {
+    background: rgba(200,50,50,0.8);
+    border-color: #EF5350;
+}
+.hud-item-bar {
+    height: 6px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 3px;
+    margin-top: 5px;
+    overflow: hidden;
+}
+#hud-item-progress {
+    height: 100%;
+    background: #4FC3F7;
+    border-radius: 3px;
+    transition: width 0.1s linear;
+}
+.hud-credit {
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255,255,255,0.35);
+    font-size: 10px;
+}
+
 #ui-overlay {
     position: absolute;
     top: 0;

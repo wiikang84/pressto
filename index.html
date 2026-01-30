@@ -22,6 +22,21 @@
 <body>
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
+        <!-- Game HUD (Canvas fillText 대체 → HTML DOM) -->
+        <div id="game-hud" class="game-hud hidden">
+            <div id="hud-level" class="hud-level">Lv.1</div>
+            <div id="hud-cycle" class="hud-cycle hidden"></div>
+            <div id="hud-diff" class="hud-diff">Easy</div>
+            <div id="hud-theme" class="hud-theme"></div>
+            <div id="hud-practice" class="hud-practice hidden"></div>
+            <div id="hud-levelup" class="hud-levelup hidden"></div>
+            <div id="hud-token-earn" class="hud-token-earn hidden">+1 TOKEN!</div>
+            <div id="hud-item" class="hud-item hidden">
+                <span id="hud-item-name"></span>
+                <div class="hud-item-bar"><div id="hud-item-progress"></div></div>
+            </div>
+            <div id="hud-credit" class="hud-credit">made by DY</div>
+        </div>
         <div id="ui-overlay">
             <div id="score-display">0</div>
             <div id="token-display">0</div>

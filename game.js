@@ -28,6 +28,19 @@ const characterPreviewCtx = characterPreview ? characterPreview.getContext('2d')
 const fullscreenBtn = document.getElementById('fullscreen-btn');
 const gameoverDifficultyEl = document.getElementById('gameover-difficulty');
 
+// HUD 요소 (Canvas fillText 대체 → HTML DOM)
+const gameHud = document.getElementById('game-hud');
+const hudLevel = document.getElementById('hud-level');
+const hudCycle = document.getElementById('hud-cycle');
+const hudDiff = document.getElementById('hud-diff');
+const hudTheme = document.getElementById('hud-theme');
+const hudPractice = document.getElementById('hud-practice');
+const hudLevelup = document.getElementById('hud-levelup');
+const hudTokenEarn = document.getElementById('hud-token-earn');
+const hudItem = document.getElementById('hud-item');
+const hudItemName = document.getElementById('hud-item-name');
+const hudItemProgress = document.getElementById('hud-item-progress');
+
 // iOS 감지
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
@@ -565,12 +578,13 @@ let clouds = [];
 function initClouds() {
     clouds = [];
     for (let i = 0; i < 4; i++) {
+        const op = 0.3 + Math.random() * 0.4;
         clouds.push({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height * 0.6,
             size: 30 + Math.random() * 50,
             speed: 0.2 + Math.random() * 0.3,
-            opacity: 0.3 + Math.random() * 0.4
+            colorStr: 'rgba(255,255,255,' + op.toFixed(2) + ')'
         });
     }
 }
@@ -789,7 +803,6 @@ function resetGame() {
     currentCycle = 1;
     levelUpDisplay = 0;
     lastTokenScore = 0;
-    lastTokenLevel = 0;
     tokenDisplay_timer = 0;
     reviveInvincibleTime = 0;
     currentBirdFrame = 0;
@@ -960,87 +973,47 @@ function drawBackground() {
     }
     drawParallaxClouds();
 
-    // 레벨별 배경 장식 (극도로 간소화)
+    // 레벨별 배경 장식 (arc 완전 제거, fillRect만 사용)
     const themeIndex = (currentLevel - 1) % LEVELS_PER_CYCLE;
 
     if (themeIndex === 0) {
-        // 맑은 하늘 - 태양만
-        ctx.fillStyle = 'rgba(255, 255, 200, 0.8)';
-        ctx.beginPath();
-        ctx.arc(canvas.width * 0.9, canvas.height * 0.15, 30, 0, Math.PI * 2);
-        ctx.fill();
+        // 맑은 하늘 - 태양 (사각형)
+        ctx.fillStyle = 'rgba(255,255,200,0.8)';
+        ctx.fillRect(canvas.width * 0.9 - 25, canvas.height * 0.15 - 25, 50, 50);
     } else if (themeIndex === 1) {
-        // 석양 - 태양 (단색)
-        ctx.fillStyle = 'rgba(255, 180, 80, 0.9)';
-        ctx.beginPath();
-        ctx.arc(canvas.width * 0.85, canvas.height * 0.35, 40, 0, Math.PI * 2);
-        ctx.fill();
+        // 석양 - 태양 (사각형)
+        ctx.fillStyle = 'rgba(255,180,80,0.9)';
+        ctx.fillRect(canvas.width * 0.85 - 30, canvas.height * 0.35 - 30, 60, 60);
     } else if (themeIndex === 2) {
         // 밤하늘 - 별 + 달
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-        for (let i = 0; i < 15; i++) {
-            const sx = (i * 137 + 50) % canvas.width;
-            const sy = (i * 89 + 30) % canvas.height;
-            ctx.fillRect(sx, sy, 2, 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        for (let i = 0; i < 12; i++) {
+            ctx.fillRect((i * 137 + 50) % canvas.width, (i * 89 + 30) % canvas.height, 2, 2);
         }
         ctx.fillStyle = '#FFFACD';
-        ctx.beginPath();
-        ctx.arc(canvas.width * 0.8, canvas.height * 0.18, 30, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillRect(canvas.width * 0.8 - 25, canvas.height * 0.18 - 25, 50, 50);
     } else if (themeIndex === 3) {
         // 우주 - 별 + 행성
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-        for (let i = 0; i < 20; i++) {
-            ctx.fillRect((i * 137) % canvas.width, (i * 89) % canvas.height, 1.5, 1.5);
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        for (let i = 0; i < 15; i++) {
+            ctx.fillRect((i * 137) % canvas.width, (i * 89) % canvas.height, 2, 2);
         }
         ctx.fillStyle = '#9B59B6';
-        ctx.beginPath();
-        ctx.arc(canvas.width * 0.9, canvas.height * 0.15, 25, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillRect(canvas.width * 0.9 - 20, canvas.height * 0.15 - 20, 40, 40);
     } else if (themeIndex === 4) {
-        // 네온 시티 - 빌딩만
-        ctx.fillStyle = 'rgba(20, 20, 40, 0.8)';
-        for (let i = 0; i < 8; i++) {
-            ctx.fillRect(i * (canvas.width / 8), canvas.height - 60 - (i * 37 % 80), canvas.width / 10, 60 + (i * 37 % 80));
+        // 네온 시티 - 빌딩
+        ctx.fillStyle = 'rgba(20,20,40,0.8)';
+        for (let i = 0; i < 6; i++) {
+            ctx.fillRect(i * (canvas.width / 6), canvas.height - 60 - (i * 37 % 80), canvas.width / 8, 60 + (i * 37 % 80));
         }
     }
 
-    // 회차 표시 (2회차 이상) - 간소화
-    if (currentCycle > 1) {
-        ctx.fillStyle = 'rgba(255, 215, 0, 0.12)';
-        ctx.font = 'bold 50px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(`${currentCycle}`, canvas.width / 2, canvas.height / 2 + 15);
-    }
-
-    // 50점 보스 효과 간소화
+    // 50점 보스 효과 (색상 오버레이만, 번개 제거)
     if (score >= 50 && (currentDifficulty === 'easy' || currentDifficulty === 'middle')) {
-        ctx.fillStyle = currentDifficulty === 'easy' ? 'rgba(255, 150, 0, 0.06)' : 'rgba(255, 0, 100, 0.06)';
+        ctx.fillStyle = currentDifficulty === 'easy' ? 'rgba(255,150,0,0.06)' : 'rgba(255,0,100,0.06)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // 번개/스파크 효과
-        if (Math.random() < 0.02) {
-            ctx.strokeStyle = currentDifficulty === 'easy' ?
-                'rgba(255, 215, 0, 0.3)' : 'rgba(255, 100, 150, 0.3)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            const startX = Math.random() * canvas.width;
-            ctx.moveTo(startX, 0);
-            let y = 0;
-            while (y < canvas.height * 0.3) {
-                y += 20;
-                ctx.lineTo(startX + (Math.random() - 0.5) * 50, y);
-            }
-            ctx.stroke();
-        }
     }
-
-    // 크레딧 표시 (가벼운 시스템 폰트)
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-    ctx.font = '11px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('made by DY', canvas.width / 2, canvas.height - 10);
-    ctx.textAlign = 'left';
+    // 크레딧/회차 표시 → HTML HUD로 이동 (Canvas fillText 제거)
 }
 
 // 패럴랙스 구름 업데이트
@@ -1056,10 +1029,10 @@ function updateParallaxClouds() {
 
 // 패럴랙스 구름 그리기
 function drawParallaxClouds() {
-    clouds.forEach(cloud => {
-        ctx.fillStyle = `rgba(255, 255, 255, ${cloud.opacity})`;
-        drawCloud(cloud.x, cloud.y, cloud.size);
-    });
+    for (let i = 0; i < clouds.length; i++) {
+        ctx.fillStyle = clouds[i].colorStr;
+        drawCloud(clouds[i].x, clouds[i].y, clouds[i].size);
+    }
 }
 
 function drawCloud(x, y, size) {
@@ -1093,24 +1066,22 @@ function drawPlayer() {
     const isReviveInvincible = reviveInvincibleTime > frameNow || practiceMode;
     const isItemInvincible = activeItem === ItemType.SHIELD;
 
-    // 아이템 효과별 글로우 (shadowBlur 대신 테두리 원으로 표현)
+    // 아이템 효과별 글로우 (프리캐시 색상, arc→fillRect)
     if (gameState === GameState.PLAYING) {
         let glowColor = null;
         if (isItemInvincible) {
-            glowColor = 'rgba(79, 195, 247, 0.4)';
+            glowColor = 'rgba(79,195,247,0.4)';
         } else if (activeItem === ItemType.SHRINK) {
-            glowColor = 'rgba(102, 187, 106, 0.4)';
+            glowColor = 'rgba(102,187,106,0.4)';
         } else if (activeItem === ItemType.ENLARGE) {
-            glowColor = 'rgba(239, 83, 80, 0.4)';
+            glowColor = 'rgba(239,83,80,0.4)';
         } else if (isReviveInvincible) {
-            glowColor = 'rgba(0, 255, 255, 0.35)';
+            glowColor = 'rgba(0,255,255,0.35)';
         }
         if (glowColor) {
-            const glowSize = player.width * playerSizeMultiplier * 0.8 + Math.sin(frameNow * 0.01) * 5;
+            const gs = player.width * playerSizeMultiplier * 0.8;
             ctx.fillStyle = glowColor;
-            ctx.beginPath();
-            ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.fillRect(-gs, -gs, gs * 2, gs * 2);
         }
     }
 
@@ -1121,112 +1092,96 @@ function drawPlayer() {
     ctx.restore();
 }
 
-// 아이템 그리기
+// 아이템 프리캐시 색상
+const ITEM_GLOW_BUFF = 'rgba(100,200,255,0.25)';
+const ITEM_GLOW_DEBUFF = 'rgba(255,100,100,0.25)';
+const ITEM_BG_BUFF = 'rgba(100,200,255,0.8)';
+const ITEM_BG_DEBUFF = 'rgba(255,100,100,0.8)';
+
+// 아이템 그리기 (arc 최소화, fillText 완전 제거)
 function drawItems() {
-    items.forEach(item => {
-        if (item.collected) return;
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.collected) continue;
 
         const config = itemConfig[item.type];
-        const pulseScale = 1 + Math.sin(item.pulse) * 0.15;
 
-        ctx.save();
-        ctx.translate(item.x, item.y);
-        ctx.scale(pulseScale, pulseScale);
+        // 글로우 (단색, 템플릿 리터럴 제거)
+        ctx.fillStyle = config.isDebuff ? ITEM_GLOW_DEBUFF : ITEM_GLOW_BUFF;
+        ctx.fillRect(item.x - item.radius - 6, item.y - item.radius - 6, (item.radius + 6) * 2, (item.radius + 6) * 2);
 
-        // 글로우 효과 (shadowBlur 대신 외곽 원)
-        const glowAlpha = 0.25 + Math.sin(item.pulse * 2) * 0.1;
-        ctx.fillStyle = config.isDebuff ? `rgba(255, 100, 100, ${glowAlpha})` : `rgba(100, 200, 255, ${glowAlpha})`;
-        ctx.beginPath();
-        ctx.arc(0, 0, item.radius + 6, 0, Math.PI * 2);
-        ctx.fill();
+        // 배경 원 → 사각형으로 변경 (arc 제거)
+        ctx.fillStyle = config.isDebuff ? ITEM_BG_DEBUFF : ITEM_BG_BUFF;
+        ctx.fillRect(item.x - item.radius, item.y - item.radius, item.radius * 2, item.radius * 2);
 
-        // 배경 원
-        ctx.beginPath();
-        ctx.arc(0, 0, item.radius, 0, Math.PI * 2);
-        ctx.fillStyle = config.isDebuff ? 'rgba(255, 100, 100, 0.8)' : 'rgba(100, 200, 255, 0.8)';
-        ctx.fill();
-        ctx.strokeStyle = config.color;
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
-        // 아이콘 (순수 도형으로 성능 최적화 - fillText 제거)
+        // 아이콘 (순수 도형, save/restore 제거)
         ctx.fillStyle = '#fff';
+        ctx.beginPath();
         if (item.type === ItemType.SHIELD) {
-            // 방패 도형
-            ctx.beginPath();
-            ctx.moveTo(0, -8);
-            ctx.lineTo(8, -4);
-            ctx.lineTo(8, 4);
-            ctx.lineTo(0, 10);
-            ctx.lineTo(-8, 4);
-            ctx.lineTo(-8, -4);
-            ctx.closePath();
-            ctx.fill();
+            ctx.moveTo(item.x, item.y - 8);
+            ctx.lineTo(item.x + 8, item.y - 4);
+            ctx.lineTo(item.x + 8, item.y + 4);
+            ctx.lineTo(item.x, item.y + 10);
+            ctx.lineTo(item.x - 8, item.y + 4);
+            ctx.lineTo(item.x - 8, item.y - 4);
         } else if (item.type === ItemType.SHRINK) {
-            // 아래 화살표 도형
-            ctx.beginPath();
-            ctx.moveTo(0, 10);
-            ctx.lineTo(-8, -4);
-            ctx.lineTo(8, -4);
-            ctx.closePath();
-            ctx.fill();
-        } else if (item.type === ItemType.ENLARGE) {
-            // 위 화살표 도형
-            ctx.beginPath();
-            ctx.moveTo(0, -10);
-            ctx.lineTo(8, 4);
-            ctx.lineTo(-8, 4);
-            ctx.closePath();
-            ctx.fill();
+            ctx.moveTo(item.x, item.y + 10);
+            ctx.lineTo(item.x - 8, item.y - 4);
+            ctx.lineTo(item.x + 8, item.y - 4);
+        } else {
+            ctx.moveTo(item.x, item.y - 10);
+            ctx.lineTo(item.x + 8, item.y + 4);
+            ctx.lineTo(item.x - 8, item.y + 4);
         }
-
-        ctx.restore();
-    });
+        ctx.closePath();
+        ctx.fill();
+    }
 }
 
-// 파이프 그리기
+// 파이프 그리기 (getCurrentTheme 1회 호출, stroke 제거)
+const PIPE_HIGHLIGHT = 'rgba(255,255,255,0.15)';
+
 function drawPipes() {
-    pipes.forEach(pipe => {
+    if (pipes.length === 0) return;
+    const theme = getCurrentTheme();
+    const pipeColor = theme.pipe;
+    const capColor = theme.pipeCap || pipeColor;
+
+    for (let i = 0; i < pipes.length; i++) {
+        const pipe = pipes[i];
         const gap = pipe.gapSize || pipeConfig.gap;
         // 위쪽 파이프
-        drawPipe(pipe.x, 0, pipe.width, pipe.gapY, true);
+        ctx.fillStyle = pipeColor;
+        ctx.fillRect(pipe.x, 0, pipe.width, pipe.gapY);
+        // 캡
+        ctx.fillStyle = capColor;
+        ctx.fillRect(pipe.x - 5, pipe.gapY - 20, pipe.width + 10, 20);
+        // 하이라이트
+        ctx.fillStyle = PIPE_HIGHLIGHT;
+        ctx.fillRect(pipe.x + 4, 0, 8, pipe.gapY);
+
         // 아래쪽 파이프
-        drawPipe(pipe.x, pipe.gapY + gap, pipe.width, canvas.height - pipe.gapY - gap, false);
-    });
+        const bottomY = pipe.gapY + gap;
+        const bottomH = canvas.height - bottomY;
+        ctx.fillStyle = pipeColor;
+        ctx.fillRect(pipe.x, bottomY, pipe.width, bottomH);
+        // 캡
+        ctx.fillStyle = capColor;
+        ctx.fillRect(pipe.x - 5, bottomY, pipe.width + 10, 20);
+        // 하이라이트
+        ctx.fillStyle = PIPE_HIGHLIGHT;
+        ctx.fillRect(pipe.x + 4, bottomY, 8, bottomH);
+    }
 }
 
-function drawPipe(x, y, width, height, isTop) {
-    const theme = getCurrentTheme();
-
-    // 모든 레벨 공통: 단순 사각형 + 캡
-    ctx.fillStyle = theme.pipe;
-    ctx.fillRect(x, y, width, height);
-    ctx.strokeStyle = theme.pipeStroke;
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, width, height);
-
-    // 캡
-    const capHeight = 20;
-    const capY = isTop ? y + height - capHeight : y;
-    ctx.fillStyle = theme.pipeCap || theme.pipe;
-    ctx.fillRect(x - 5, capY, width + 10, capHeight);
-    ctx.strokeRect(x - 5, capY, width + 10, capHeight);
-
-    // 하이라이트
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-    ctx.fillRect(x + 4, y, 8, height);
-}
-
-// 파티클 그리기
+// 파티클 그리기 (arc→fillRect, globalAlpha→없음)
 function drawParticles() {
-    particles.forEach(p => {
-        ctx.globalAlpha = p.life;
+    for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
         ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fill();
-    });
-    ctx.globalAlpha = 1;
+        const s = p.radius * p.life;
+        ctx.fillRect(p.x - s, p.y - s, s * 2, s * 2);
+    }
 }
 
 // 충돌 감지 (히트박스 여유있게)
@@ -1383,12 +1338,13 @@ function update(deltaTime) {
         // 펄스 애니메이션
         item.pulse = (item.pulse + 0.1) % (Math.PI * 2);
 
-        // 플레이어와 충돌 체크 (수집)
+        // 플레이어와 충돌 체크 (제곱 비교, sqrt 제거)
         const dx = player.x - item.x;
         const dy = player.y - item.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
+        const distSq = dx * dx + dy * dy;
+        const hitDist = item.radius + currentPlayerWidth / 2 - 10;
 
-        if (distance < item.radius + currentPlayerWidth / 2 - 10) {
+        if (distSq < hitDist * hitDist) {
             item.collected = true;
             collectItem(item);
         }
@@ -1454,6 +1410,7 @@ function gameOver() {
     scoreDisplay.classList.remove('visible');
     tokenDisplay.classList.remove('visible');
     pauseBtn.classList.add('hidden');
+    if (gameHud) gameHud.classList.add('hidden');
     gameoverScreen.classList.remove('hidden');
 
     // 난이도 표시
@@ -1518,6 +1475,9 @@ function startGame(difficulty) {
     scoreDisplay.classList.add('visible');
     tokenDisplay.classList.add('visible');
     pauseBtn.classList.remove('hidden');
+    if (gameHud) gameHud.classList.remove('hidden');
+    // HUD 캐시 초기화
+    _lastHudLevel = -1; _lastHudDiff = ''; _lastHudTheme = ''; _lastHudPractice = ''; _lastHudItem = '';
     gameStartTime = Date.now();
     lastPipeTime = gameStartTime + 2000; // 2초 후부터 파이프 생성
 }
@@ -1596,6 +1556,7 @@ function goToHome() {
     scoreDisplay.classList.remove('visible');
     tokenDisplay.classList.remove('visible');
     pauseBtn.classList.add('hidden');
+    if (gameHud) gameHud.classList.add('hidden');
     updateTokenDisplays();
 }
 
@@ -1625,204 +1586,130 @@ function resumeGame() {
     pauseBtn.classList.remove('hidden');
 }
 
-// 연습 모드 UI 그리기
-function drawPracticeUI() {
-    const now = frameNow;
-    const settings = difficultySettings[currentDifficulty];
-    const isReviveInvincible = reviveInvincibleTime > now;
+// ===== HTML HUD 업데이트 (Canvas fillText 완전 제거) =====
+let _lastHudLevel = -1;
+let _lastHudDiff = '';
+let _lastHudTheme = '';
+let _lastHudPractice = '';
+let _lastHudItem = '';
 
-    // 부활 무적 표시
-    if (isReviveInvincible && gameState === GameState.PLAYING) {
-        const timeLeft = Math.ceil((reviveInvincibleTime - now) / 1000);
-        ctx.fillStyle = 'rgba(156, 39, 176, 0.5)';
-        ctx.fillRect(canvas.width/2 - 100, 10, 200, 50);
-        ctx.strokeStyle = '#E91E63';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(canvas.width/2 - 100, 10, 200, 50);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 20px "Segoe UI"';
-        ctx.textAlign = 'center';
-        ctx.fillText(`부활 무적! ${timeLeft}초`, canvas.width/2, 42);
-        return;
-    }
-
-    if (!practiceMode || gameState !== GameState.PLAYING) return;
-
-    const timeLeft = Math.ceil((settings.practiceTime - (now - gameStartTime)) / 1000);
-
-    // 반투명 배경
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-    ctx.fillRect(canvas.width/2 - 130, 10, 260, 70);
-    ctx.strokeStyle = '#FFD700';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(canvas.width/2 - 130, 10, 260, 70);
-
-    // 난이도 + 연습 모드 텍스트
-    ctx.fillStyle = '#FFD700';
-    ctx.font = 'bold 18px "Segoe UI"';
-    ctx.textAlign = 'center';
-    ctx.fillText(`[${settings.name}] 연습 모드 (무적)`, canvas.width/2, 36);
-
-    // 남은 시간
-    ctx.fillStyle = '#fff';
-    ctx.font = '14px "Segoe UI"';
-    ctx.fillText(`${timeLeft}초 후 실전 | 더블클릭: SKIP`, canvas.width/2, 58);
-}
-
-// 토큰 획득 표시
-function drawTokenEarnUI() {
-    if (tokenDisplay_timer <= 0 || gameState !== GameState.PLAYING) return;
-
-    const alpha = tokenDisplay_timer / 90;
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = '#FFD700';
-    ctx.font = 'bold 36px "Segoe UI"';
-    ctx.textAlign = 'center';
-    ctx.fillText('+1 TOKEN!', canvas.width / 2, canvas.height / 2 - 50);
-    ctx.restore();
-}
-
-// 레벨 표시 UI
-function drawLevelUI() {
+function updateHUD() {
     if (gameState !== GameState.PLAYING) return;
 
+    const now = frameNow;
+    const settings = difficultySettings[currentDifficulty];
     const theme = getCurrentTheme();
 
-    // 현재 레벨 + 회차 (좌측 상단, 일시정지 버튼 옆)
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    const boxWidth = currentCycle > 1 ? 130 : 100;
-    const levelBoxX = 80; // 일시정지 버튼 옆
-    ctx.fillRect(levelBoxX, 10, boxWidth, 50);
+    // 레벨 (변경 시에만 DOM 업데이트)
+    if (_lastHudLevel !== currentLevel) {
+        _lastHudLevel = currentLevel;
+        hudLevel.textContent = 'Lv.' + currentLevel;
+        hudLevel.style.color = currentLevel >= 51 ? '#FF6666' : '#fff';
 
-    ctx.textAlign = 'left';
-
-    // Hell 모드 또는 회차 표시
-    if (currentLevel >= 51) {
-        ctx.fillStyle = '#FF4444';
-        ctx.font = 'bold 12px "Segoe UI"';
-        ctx.fillText('Hell', levelBoxX + 5, 25);
-    } else if (currentCycle > 1) {
-        ctx.fillStyle = '#FFD700';
-        ctx.font = 'bold 12px "Segoe UI"';
-        ctx.fillText(`${currentCycle}회차`, levelBoxX + 5, 25);
+        // 회차/Hell 표시
+        if (currentLevel >= 51) {
+            hudCycle.textContent = 'Hell';
+            hudCycle.className = 'hud-cycle hell';
+        } else if (currentCycle > 1) {
+            hudCycle.textContent = currentCycle + '회차';
+            hudCycle.className = 'hud-cycle';
+        } else {
+            hudCycle.className = 'hud-cycle hidden';
+        }
     }
 
-    // 레벨
-    ctx.fillStyle = currentLevel >= 51 ? '#FF6666' : '#fff';
-    ctx.font = 'bold 20px "Segoe UI"';
-    ctx.fillText(`Lv.${currentLevel}`, levelBoxX + 5, (currentLevel >= 51 || currentCycle > 1) ? 48 : 38);
+    // 난이도 (변경 시에만)
+    if (_lastHudDiff !== currentDifficulty) {
+        _lastHudDiff = currentDifficulty;
+        hudDiff.textContent = settings.name;
+        hudDiff.className = 'hud-diff ' + currentDifficulty;
+    }
 
-    // 난이도 표시 (우측 상단)
-    const settings = difficultySettings[currentDifficulty];
-    ctx.fillStyle = settings.color;
-    ctx.fillRect(canvas.width - 90, 10, 80, 28);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(canvas.width - 90, 10, 80, 28);
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 14px "Segoe UI"';
-    ctx.textAlign = 'center';
-    ctx.fillText(settings.name, canvas.width - 50, 29);
+    // 테마 (변경 시에만)
+    if (_lastHudTheme !== theme.name) {
+        _lastHudTheme = theme.name;
+        hudTheme.textContent = theme.name;
+        hudTheme.style.color = theme.pipe;
+    }
 
-    // 테마 이름 (난이도 아래)
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.fillRect(canvas.width - 110, 45, 100, 25);
-    ctx.fillStyle = theme.pipe;
-    ctx.font = '12px "Segoe UI"';
-    ctx.textAlign = 'right';
-    ctx.fillText(theme.name, canvas.width - 15, 62);
+    // 연습모드 / 부활무적
+    const isReviveInvincible = reviveInvincibleTime > now;
+    if (isReviveInvincible) {
+        const tl = Math.ceil((reviveInvincibleTime - now) / 1000);
+        const txt = '부활 무적! ' + tl + '초';
+        if (_lastHudPractice !== txt) {
+            _lastHudPractice = txt;
+            hudPractice.textContent = txt;
+            hudPractice.className = 'hud-practice revive';
+        }
+    } else if (practiceMode) {
+        const tl = Math.ceil((settings.practiceTime - (now - gameStartTime)) / 1000);
+        const txt = '[' + settings.name + '] 연습 (무적) ' + tl + '초';
+        if (_lastHudPractice !== txt) {
+            _lastHudPractice = txt;
+            hudPractice.textContent = txt;
+            hudPractice.className = 'hud-practice';
+        }
+    } else {
+        if (_lastHudPractice !== '') {
+            _lastHudPractice = '';
+            hudPractice.className = 'hud-practice hidden';
+        }
+    }
 
-    // 레벨업 표시 (중앙)
+    // 레벨업 표시
     if (levelUpDisplay > 0) {
         levelUpDisplay--;
-        const alpha = Math.min(levelUpDisplay / 60, 1);
-        const scale = 1 + (120 - levelUpDisplay) * 0.005;
-
-        ctx.save();
-        ctx.globalAlpha = alpha;
-        ctx.translate(canvas.width/2, canvas.height/2);
-        ctx.scale(scale, scale);
-
-        // Hell 모드 또는 회차 변경 시 특별 표시
-        const isNewCycle = (currentLevel - 1) % LEVELS_PER_CYCLE === 0 && currentLevel > 1;
-        const isHellMode = currentLevel === 51;
-
-        if (isHellMode) {
-            // Hell 모드 진입!
-            ctx.fillStyle = '#FF4444';
-            ctx.font = 'bold 60px "Segoe UI"';
-            ctx.textAlign = 'center';
-            ctx.fillText('HELL MODE', 0, -20);
-
-            ctx.fillStyle = '#FF6666';
-            ctx.font = 'bold 24px "Segoe UI"';
-            ctx.fillText('진정한 도전이 시작됩니다!', 0, 25);
-        } else if (isNewCycle) {
-            // 새 회차 시작
-            ctx.fillStyle = '#FFD700';
-            ctx.font = `bold ${50 + currentCycle * 5}px "Segoe UI"`;
-            ctx.textAlign = 'center';
-            ctx.fillText(`${currentCycle}회차 돌입!`, 0, -20);
-
-            ctx.fillStyle = '#FF69B4';
-            ctx.font = 'bold 24px "Segoe UI"';
-            ctx.fillText('더 강해진 도전이 시작됩니다!', 0, 25);
-        } else {
-            // 일반 레벨업
-            ctx.fillStyle = currentLevel > 51 ? '#FF6666' : '#FF69B4';
-            ctx.font = 'bold 48px "Segoe UI"';
-            ctx.textAlign = 'center';
-            ctx.fillText(`LEVEL ${currentLevel}!`, 0, 0);
-
-            ctx.fillStyle = '#FFD700';
-            ctx.font = '20px "Segoe UI"';
-            ctx.fillText(`${theme.name}`, 0, 35);
+        if (levelUpDisplay === 119) {
+            // 레벨업 시작 시 1회만 DOM 업데이트
+            const isNewCycle = (currentLevel - 1) % LEVELS_PER_CYCLE === 0 && currentLevel > 1;
+            const isHellMode = currentLevel === 51;
+            if (isHellMode) {
+                hudLevelup.innerHTML = 'HELL MODE<span class="sub">진정한 도전이 시작됩니다!</span>';
+                hudLevelup.className = 'hud-levelup hell';
+            } else if (isNewCycle) {
+                hudLevelup.innerHTML = currentCycle + '회차 돌입!<span class="sub">더 강해진 도전이 시작됩니다!</span>';
+                hudLevelup.className = 'hud-levelup cycle';
+            } else {
+                hudLevelup.innerHTML = 'LEVEL ' + currentLevel + '!<span class="sub">' + theme.name + '</span>';
+                hudLevelup.className = 'hud-levelup';
+            }
         }
-
-        ctx.restore();
+        hudLevelup.style.opacity = Math.min(levelUpDisplay / 60, 1);
+        if (levelUpDisplay === 0) {
+            hudLevelup.className = 'hud-levelup hidden';
+        }
     }
-}
 
-// 아이템 상태 UI 그리기
-function drawItemUI() {
-    if (!activeItem || gameState !== GameState.PLAYING) return;
+    // 토큰 획득 표시
+    if (tokenDisplay_timer > 0) {
+        hudTokenEarn.className = 'hud-token-earn';
+        hudTokenEarn.style.opacity = tokenDisplay_timer / 90;
+    } else {
+        if (hudTokenEarn.className !== 'hud-token-earn hidden') {
+            hudTokenEarn.className = 'hud-token-earn hidden';
+        }
+    }
 
-    const config = itemConfig[activeItem];
-    const now = frameNow;
-    const remaining = Math.max(0, activeItemEndTime - now);
-    const progress = remaining / config.duration;
+    // 아이템 상태
+    if (activeItem) {
+        const config = itemConfig[activeItem];
+        const remaining = Math.max(0, activeItemEndTime - now);
+        const pct = (remaining / config.duration * 100);
 
-    // 우측 하단에 아이템 표시
-    const boxX = canvas.width - 100;
-    const boxY = canvas.height - 60;
-    const boxWidth = 90;
-    const boxHeight = 50;
-
-    ctx.save();
-
-    // 배경
-    ctx.fillStyle = config.isDebuff ? 'rgba(200, 50, 50, 0.8)' : 'rgba(50, 150, 200, 0.8)';
-    ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
-    ctx.strokeStyle = config.color;
-    ctx.lineWidth = 2;
-    ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
-
-    // 아이템 이름
-    ctx.font = 'bold 14px sans-serif';
-    ctx.fillStyle = '#fff';
-    ctx.textAlign = 'center';
-    ctx.fillText(config.name, boxX + boxWidth/2, boxY + 20);
-
-    // 남은 시간 바
-    const barWidth = boxWidth - 10;
-    const barHeight = 8;
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fillRect(boxX + 5, boxY + 32, barWidth, barHeight);
-    ctx.fillStyle = config.color;
-    ctx.fillRect(boxX + 5, boxY + 32, barWidth * progress, barHeight);
-
-    ctx.restore();
+        if (_lastHudItem !== activeItem) {
+            _lastHudItem = activeItem;
+            hudItemName.textContent = config.name;
+            hudItem.className = config.isDebuff ? 'hud-item debuff' : 'hud-item';
+            hudItemProgress.style.background = config.color;
+        }
+        hudItemProgress.style.width = pct + '%';
+    } else {
+        if (_lastHudItem !== '') {
+            _lastHudItem = '';
+            hudItem.className = 'hud-item hidden';
+        }
+    }
 }
 
 // 렌더링
@@ -1835,10 +1722,8 @@ function render() {
     drawItems();
     drawPlayer();
     drawParticles();
-    drawPracticeUI();
-    drawLevelUI();
-    drawTokenEarnUI();
-    drawItemUI();
+    // UI는 전부 HTML DOM (Canvas fillText 완전 제거)
+    updateHUD();
 }
 
 // 게임 루프
